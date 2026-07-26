@@ -19,30 +19,27 @@
             margin: 0;
             padding: 0;
         }
-        /* Posizione fissa sul body per "blindare" l'interfaccia all'apertura della tastiera */
         html, body {
+            height: 100%;
             background-color: #121212;
             overflow: hidden;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
+        /* Layout flessibile basato su dvh per blindare l'header in alto all'apertura della tastiera */
         body {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
             display: flex;
             flex-direction: column;
+            height: 100dvh;
             padding: 8px;
         }
         header {
+            flex-shrink: 0;
             z-index: 100;
             display: flex;
             flex-direction: column;
             gap: 6px;
             padding-bottom: 8px;
             background-color: #121212;
-            flex-shrink: 0;
         }
         .top-bar {
             display: flex;
@@ -190,6 +187,7 @@
             border: 1px solid #cccccc;
             border-radius: 8px;
             overflow: hidden;
+            min-height: 0; /* Fondamentale per flexbox su mobile */
         }
         .line-numbers {
             width: 44px;
@@ -199,27 +197,19 @@
             font-family: Consolas, Monaco, "Courier New", monospace !important;
             font-size: 15px !important;
             line-height: 1.5 !important;
+            text-align: right;
             user-select: none;
             border-right: 1px solid #e0e0e0;
             flex-shrink: 0;
-            overflow: hidden; /* Scroll gestito via JS in sincrono */
-            display: flex;
-            flex-direction: column;
-        }
-        /* Contenitore per i singoli numeri, allineati in alto quando la riga va a capo */
-        .line-numbers div {
-            display: flex;
-            justify-content: flex-end;
-            align-items: flex-start;
-            width: 100%;
+            overflow: hidden;
         }
         .work-area {
             position: relative;
             flex: 1;
             height: 100%;
             background-color: #ffffff;
-            /* La work-area gestisce se stessa, ma il vero scroll è interno alla textarea */
-            overflow: hidden; 
+            overflow: hidden;
+            display: flex;
         }
         .text-layer {
             position: absolute;
@@ -255,7 +245,7 @@
             z-index: 1;
             background: transparent !important;
             pointer-events: none;
-            overflow: hidden !important; /* Nessuna doppia scrollbar, muoviamo con JS */
+            overflow: hidden !important;
         }
         code {
             font-family: Consolas, Monaco, "Courier New", monospace !important;
@@ -273,33 +263,12 @@
             caret-color: #000000;
             resize: none;
             outline: none;
-            overflow: auto !important; /* Abilita lo scroll nativo del browser */
+            overflow: auto !important; /* Abilita lo scroll nativo orizzontale e verticale */
             -webkit-overflow-scrolling: touch;
         }
         textarea::selection {
             background-color: rgba(14, 165, 233, 0.4);
             color: transparent;
-        }
-
-        /* Clone invisibile per calcolare l'altezza esatta delle righe andate a capo */
-        #measure-mirror {
-            position: absolute;
-            top: 0; left: 0;
-            visibility: hidden;
-            pointer-events: none;
-            z-index: -100;
-            padding: 12px !important;
-            margin: 0 !important;
-            border: none !important;
-            font-family: Consolas, Monaco, "Courier New", monospace !important;
-            font-size: 15px !important;
-            line-height: 1.5 !important;
-            white-space: pre-wrap !important;
-            word-wrap: break-word !important;
-            word-break: break-word !important;
-            box-sizing: border-box !important;
-            tab-size: 4;
-            letter-spacing: 0px;
         }
     </style>
 </head>
@@ -362,11 +331,10 @@
     </header>
 
     <div class="editor-container">
-        <div id="lineNumbers" class="line-numbers"></div>
+        <div id="lineNumbers" class="line-numbers">1</div>
         <div class="work-area">
             <pre id="highlighting" class="text-layer wrap-enabled"><code id="highlighting-content" class="language-plaintext wrap-enabled"></code></pre>
             <textarea id="editor" class="text-layer wrap-enabled" placeholder="Scrivi qui o apri un file..." spellcheck="false"></textarea>
-            <div id="measure-mirror"></div>
         </div>
     </div>
 
@@ -377,7 +345,6 @@
         const highlightingContent = document.getElementById('highlighting-content');
         const highlighting = document.getElementById('highlighting');
         const lineNumbers = document.getElementById('lineNumbers');
-        const measureMirror = document.getElementById('measure-mirror');
         
         const fileNameDisplay = document.getElementById('fileNameDisplay');
         const fileStatusDisplay = document.getElementById('fileStatusDisplay');
@@ -416,12 +383,24 @@
             }
             document.getElementById('wrapCheck').textContent = isWrapEnabled ? '✓' : '';
             
+            // Quando "Righe a capo" è attivo, disattiviamo automaticamente i numeri riga per coerenza
+            if (isWrapEnabled) {
+                isLinesEnabled = false;
+                document.getElementById('linesCheck').textContent = '';
+                lineNumbers.style.display = 'none';
+            } else {
+                isLinesEnabled = true;
+                document.getElementById('linesCheck').textContent = '✓';
+                lineNumbers.style.display = 'block';
+            }
+
             const elements = [editor, highlighting, highlightingContent];
             if (isWrapEnabled) {
                 elements.forEach(el => {
                     el.classList.remove('wrap-disabled');
                     el.classList.add('wrap-enabled');
                 });
+                highlighting.style.width = '100%';
             } else {
                 elements.forEach(el => {
                     el.classList.remove('wrap-enabled');
@@ -438,9 +417,14 @@
 
         document.getElementById('btnToggleLines').addEventListener('click', (e) => {
             e.stopPropagation();
+            // Permetti di attivarli/disattivarli manualmente solo se il wrap è disabilitato
+            if (isWrapEnabled) {
+                alert("I numeri di riga sono disponibili solo con 'Righe a capo' disabilitato.");
+                return;
+            }
             isLinesEnabled = !isLinesEnabled;
             document.getElementById('linesCheck').textContent = isLinesEnabled ? '✓' : '';
-            lineNumbers.style.display = isLinesEnabled ? 'flex' : 'none';
+            lineNumbers.style.display = isLinesEnabled ? 'block' : 'none';
         });
 
         // --- Gestione Stato File ---
@@ -547,33 +531,6 @@
         });
 
         // --- Sincronizzazione ed Editor ---
-        
-        // Nuovo Motore Numeri di Riga (Calcolo intelligente degli "a capo")
-        function updateLineNumbers() {
-            if (!isLinesEnabled) return;
-            const rawLines = editor.value.split('\n');
-            
-            // Se "righe a capo" è disabilitato, il calcolo è leggero e veloce
-            if (!isWrapEnabled) {
-                lineNumbers.innerHTML = rawLines.map((_, i) => `<div style="height: 22.5px">${i + 1}</div>`).join('');
-                return;
-            }
-
-            // Altrimenti calcoliamo lo spazio occupato misurandolo nel div clone invisibile
-            measureMirror.style.width = editor.clientWidth + 'px';
-            measureMirror.innerHTML = '';
-            
-            rawLines.forEach(line => {
-                const div = document.createElement('div');
-                div.textContent = line || ' '; // Spazio vuoto necessario affinché il div non collassi
-                measureMirror.appendChild(div);
-            });
-            
-            const heights = Array.from(measureMirror.children).map(child => child.offsetHeight || 22.5);
-            
-            lineNumbers.innerHTML = heights.map((h, i) => `<div style="height: ${h}px">${i + 1}</div>`).join('');
-        }
-
         function updateEditor() {
             let text = editor.value;
             if (text.endsWith("\n")) {
@@ -582,7 +539,16 @@
             highlightingContent.textContent = text;
             Prism.highlightElement(highlightingContent);
 
-            updateLineNumbers();
+            // Sincronizza la larghezza del livello di evidenziazione con il contenuto reale della textarea (fondamentale per scroll orizzontale)
+            if (!isWrapEnabled) {
+                highlighting.style.width = editor.scrollWidth + 'px';
+            } else {
+                highlighting.style.width = '100%';
+            }
+
+            const rawLines = editor.value.split('\n');
+            lineNumbers.textContent = rawLines.map((_, i) => (i + 1) + ' ').join('\n');
+            
             performSearch();
             syncScroll();
         }
@@ -646,8 +612,6 @@
                 const match = searchMatches[index];
                 searchCount.textContent = `${index + 1}/${searchMatches.length}`;
 
-                // Semplificato: ci affidiamo al focus della textarea che porterà automaticamente
-                // in vista la selezione (comportamento nativo del browser).
                 editor.setSelectionRange(match.index, match.index + match.length);
                 
                 if (shouldFocus) {
@@ -664,7 +628,7 @@
         });
 
         nextSearch.addEventListener('click', () => {
-            // Se stiamo per scorrere al testo, forziamo "Righe a capo"
+            // Forza righe a capo per una ricerca pulita
             if (!isWrapEnabled) applyWrapState(true);
 
             if (searchMatches.length > 0) {
@@ -674,7 +638,7 @@
         });
 
         prevSearch.addEventListener('click', () => {
-            // Se stiamo per scorrere al testo, forziamo "Righe a capo"
+            // Forza righe a capo per una ricerca pulita
             if (!isWrapEnabled) applyWrapState(true);
 
             if (searchMatches.length > 0) {
@@ -693,13 +657,6 @@
         });
 
         editor.addEventListener('scroll', syncScroll);
-
-        // Se l'utente ruota il dispositivo mobile, dobbiamo ricalcolare le dimensioni
-        window.addEventListener('resize', () => {
-            if (isWrapEnabled && isLinesEnabled) {
-                updateLineNumbers();
-            }
-        });
 
         // --- File System API ---
         
@@ -807,8 +764,8 @@
             }
         });
 
-        // Inizializza layout
-        updateEditor();
+        // Avvio iniziale (con wrap attivo di default e numeri riga nascosti per coerenza)
+        applyWrapState(true);
     </script>
 </body>
 </html>
