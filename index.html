@@ -26,7 +26,7 @@
             display: flex;
             flex-direction: column;
             height: 100dvh;
-            padding: 10px;
+            padding: 8px;
         }
         header {
             position: sticky;
@@ -34,41 +34,47 @@
             z-index: 100;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            padding-bottom: 10px;
+            gap: 6px;
+            padding-bottom: 8px;
             background-color: #121212;
             flex-shrink: 0;
         }
         .top-bar {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             align-items: center;
         }
         .btn-action {
             flex: 1;
-            padding: 10px;
-            font-size: 15px;
+            padding: 9px 4px;
+            font-size: 13px;
             font-weight: bold;
             background-color: #0ea5e9;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
+            white-space: nowrap;
         }
         .btn-action:active {
             background-color: #0284c7;
+        }
+        .btn-icon {
+            padding: 9px 10px;
+            font-size: 14px;
+            background-color: #334155;
         }
         .menu-wrapper {
             position: relative;
         }
         .btn-menu {
-            width: 42px;
-            height: 42px;
+            width: 36px;
+            height: 36px;
             background-color: #334155;
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 20px;
+            border-radius: 6px;
+            font-size: 18px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -77,9 +83,9 @@
         .dropdown-menu {
             display: none;
             position: absolute;
-            top: 48px;
+            top: 42px;
             right: 0;
-            width: 250px;
+            width: 230px;
             background-color: #1e293b;
             border: 1px solid #475569;
             border-radius: 8px;
@@ -94,55 +100,59 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 16px;
+            padding: 10px 14px;
             color: #f1f5f9;
-            font-size: 14px;
+            font-size: 13px;
             font-family: system-ui, -apple-system, sans-serif;
             cursor: pointer;
         }
         .menu-item:active {
             background-color: #334155;
         }
-        .menu-item input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: #0ea5e9;
-            cursor: pointer;
-        }
         .menu-divider {
             height: 1px;
             background-color: #334155;
             margin: 4px 0;
         }
-        .search-bar {
+        .search-bar, .replace-bar {
             display: flex;
             gap: 6px;
             align-items: center;
         }
+        .replace-bar {
+            display: none;
+        }
+        .replace-bar.show {
+            display: flex;
+        }
         .search-input {
             flex: 1;
-            padding: 8px 12px;
+            padding: 7px 10px;
             background-color: #1e293b;
             color: #ffffff;
             border: 1px solid #334155;
             border-radius: 6px;
-            font-size: 14px;
+            font-size: 13px;
             outline: none;
         }
         .btn-search {
-            padding: 8px 12px;
+            padding: 7px 10px;
             background-color: #334155;
             color: white;
             border: none;
             border-radius: 6px;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
+        }
+        .btn-replace {
+            background-color: #0ea5e9;
+            font-weight: bold;
         }
         .search-count {
             color: #94a3b8;
-            font-size: 12px;
+            font-size: 11px;
             font-family: system-ui, -apple-system, sans-serif;
-            min-width: 45px;
+            min-width: 35px;
             text-align: center;
         }
         .editor-container {
@@ -156,17 +166,17 @@
         }
         .line-numbers {
             width: 32px;
-            padding: 16px 3px;
+            padding: 12px 2px;
             background-color: #f0f0f0;
             color: #888888;
             font-family: Verdana, Geneva, sans-serif;
-            font-size: 12px;
+            font-size: 11px;
             line-height: 1.5;
             text-align: right;
             user-select: none;
             border-right: 1px solid #e0e0e0;
             overflow: hidden;
-            white-space: pre;
+            white-space: pre-wrap;
             flex-shrink: 0;
         }
         .work-area {
@@ -181,22 +191,17 @@
             left: 0;
             width: 100%;
             height: 100%;
-            padding: 16px !important;
+            padding: 12px !important;
             margin: 0 !important;
             border: none !important;
             font-family: Verdana, Geneva, sans-serif !important;
-            font-size: 18px !important;
+            font-size: 17px !important;
             line-height: 1.5 !important;
-            white-space: pre;
+            white-space: pre-wrap !important;
+            word-break: break-word !important;
             overflow: auto;
             box-sizing: border-box !important;
             tab-size: 4;
-            letter-spacing: normal;
-            word-spacing: normal;
-        }
-        body.word-wrap textarea, body.word-wrap pre {
-            white-space: pre-wrap !important;
-            word-break: break-word !important;
         }
         textarea {
             z-index: 2;
@@ -214,7 +219,7 @@
         }
         code {
             font-family: Verdana, Geneva, sans-serif !important;
-            font-size: 18px !important;
+            font-size: 17px !important;
             line-height: 1.5 !important;
             padding: 0 !important;
             background: transparent !important;
@@ -228,14 +233,11 @@
         <div class="top-bar">
             <button id="openBtn" class="btn-action">📂 Apri</button>
             <button id="saveBtn" class="btn-action">💾 Salva</button>
+            <button id="undoBtn" class="btn-action btn-icon">↩️</button>
+            <button id="redoBtn" class="btn-action btn-icon">↪️</button>
             <div class="menu-wrapper">
                 <button id="menuBtn" class="btn-menu">⋮</button>
                 <div id="dropdownMenu" class="dropdown-menu">
-                    <label class="menu-item">
-                        <span>Vai a capo</span>
-                        <input type="checkbox" id="wordWrapToggle">
-                    </label>
-                    <div class="menu-divider"></div>
                     <div class="menu-item" id="btnUpper">
                         <span>TUTTO MAIUSCOLO</span>
                     </div>
@@ -252,11 +254,18 @@
                 </div>
             </div>
         </div>
+        
         <div class="search-bar">
-            <input type="text" id="searchInput" class="search-input" placeholder="Cerca nel testo...">
+            <input type="text" id="searchInput" class="search-input" placeholder="Cerca...">
             <button id="prevSearch" class="btn-search">▲</button>
             <button id="nextSearch" class="btn-search">▼</button>
+            <button id="toggleReplace" class="btn-search">🔄</button>
             <span id="searchCount" class="search-count">0/0</span>
+        </div>
+
+        <div id="replaceBar" class="replace-bar">
+            <input type="text" id="replaceInput" class="search-input" placeholder="Sostituisci con...">
+            <button id="btnReplace" class="btn-search btn-replace">Sostituisci</button>
         </div>
     </header>
 
@@ -277,70 +286,97 @@
         
         const menuBtn = document.getElementById('menuBtn');
         const dropdownMenu = document.getElementById('dropdownMenu');
-        const wordWrapToggle = document.getElementById('wordWrapToggle');
         
         const searchInput = document.getElementById('searchInput');
         const prevSearch = document.getElementById('prevSearch');
         const nextSearch = document.getElementById('nextSearch');
         const searchCount = document.getElementById('searchCount');
-        
-        let searchMatches = [];
-        let currentMatchIndex = -1;
+        const toggleReplace = document.getElementById('toggleReplace');
+        const replaceBar = document.getElementById('replaceBar');
+        const replaceInput = document.getElementById('replaceInput');
+        const btnReplace = document.getElementById('btnReplace');
 
-        // Impostazioni salvate
-        const savedWordWrap = localStorage.getItem('dm8_word_wrap') === 'true';
-        wordWrapToggle.checked = savedWordWrap;
-        if (savedWordWrap) {
-            document.body.classList.add('word-wrap');
+        // --- Undo / Redo Management ---
+        let historyStack = [''];
+        let historyIndex = 0;
+        let isUndoRedoAction = false;
+
+        function saveState() {
+            if (isUndoRedoAction) return;
+            const currentText = editor.value;
+            if (historyStack[historyIndex] !== currentText) {
+                historyStack = historyStack.slice(0, historyIndex + 1);
+                historyStack.push(currentText);
+                historyIndex = historyStack.length - 1;
+            }
         }
 
-        wordWrapToggle.addEventListener('change', (e) => {
-            const isChecked = e.target.checked;
-            localStorage.setItem('dm8_word_wrap', isChecked);
-            if (isChecked) {
-                document.body.classList.add('word-wrap');
-            } else {
-                document.body.classList.remove('word-wrap');
+        document.getElementById('undoBtn').addEventListener('click', () => {
+            if (historyIndex > 0) {
+                isUndoRedoAction = true;
+                historyIndex--;
+                editor.value = historyStack[historyIndex];
+                updateEditor();
+                isUndoRedoAction = false;
             }
+        });
+
+        document.getElementById('redoBtn').addEventListener('click', () => {
+            if (historyIndex < historyStack.length - 1) {
+                isUndoRedoAction = true;
+                historyIndex++;
+                editor.value = historyStack[historyIndex];
+                updateEditor();
+                isUndoRedoAction = false;
+            }
+        });
+
+        // --- Trova e Sostituisci ---
+        toggleReplace.addEventListener('click', () => {
+            replaceBar.classList.toggle('show');
+        });
+
+        btnReplace.addEventListener('click', () => {
+            const query = searchInput.value;
+            const replaceText = replaceInput.value;
+            if (!query) return;
+
+            const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+            editor.value = editor.value.replace(regex, replaceText);
+            saveState();
             updateEditor();
         });
 
-        // Gestione Menu
+        // --- Gestione Menu ---
         menuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             dropdownMenu.classList.toggle('show');
         });
 
-        document.addEventListener('click', (e) => {
-            if (dropdownMenu.classList.contains('show')) {
-                dropdownMenu.classList.remove('show');
-            }
+        document.addEventListener('click', () => {
+            dropdownMenu.classList.remove('show');
         });
 
-        dropdownMenu.addEventListener('click', (e) => {
-            if (e.target.tagName !== 'INPUT' && !e.target.closest('label')) {
-                dropdownMenu.classList.remove('show');
-            }
-        });
-
-        // Funzioni Conversione Testo
+        // Conversione Testo
         document.getElementById('btnUpper').addEventListener('click', () => {
             editor.value = editor.value.toUpperCase();
+            saveState();
             updateEditor();
         });
 
         document.getElementById('btnLower').addEventListener('click', () => {
             editor.value = editor.value.toLowerCase();
+            saveState();
             updateEditor();
         });
 
         document.getElementById('btnSentence').addEventListener('click', () => {
             let text = editor.value.toLowerCase();
             editor.value = text.replace(/(^\s*|[.!?]\s+)([a-zàèéìòù])/g, (m, p1, p2) => p1 + p2.toUpperCase());
+            saveState();
             updateEditor();
         });
 
-        // Conta Caratteri
         document.getElementById('btnCharCount').addEventListener('click', () => {
             const text = editor.value;
             const charCount = text.length;
@@ -348,7 +384,7 @@
             alert(`Statistiche Testo:\n\n• Caratteri totali: ${charCount}\n• Parole totali: ${wordCount}`);
         });
 
-        // Aggiornamento sincronizzato
+        // --- Editor e Sincronizzazione ---
         function updateEditor() {
             let text = editor.value;
             if (text.endsWith("\n")) {
@@ -385,7 +421,10 @@
             }
         }
 
-        // Ricerca
+        // --- Ricerca ---
+        let searchMatches = [];
+        let currentMatchIndex = -1;
+
         function performSearch() {
             const query = searchInput.value;
             const text = editor.value;
@@ -443,10 +482,16 @@
             }
         });
 
-        editor.addEventListener('input', updateEditor);
+        let debounceTimer;
+        editor.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(saveState, 400);
+            updateEditor();
+        });
+
         editor.addEventListener('scroll', syncScroll);
 
-        // Apertura / Salvataggio
+        // --- File System ---
         document.getElementById('openBtn').addEventListener('click', async () => {
             try {
                 [fileHandle] = await window.showOpenFilePicker({
@@ -460,6 +505,8 @@
                 const file = await fileHandle.getFile();
                 setLanguage(file.name);
                 editor.value = await file.text();
+                historyStack = [editor.value];
+                historyIndex = 0;
                 updateEditor();
             } catch (err) {
                 console.log('Apertura annullata', err);
