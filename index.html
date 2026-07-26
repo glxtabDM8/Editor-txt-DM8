@@ -44,6 +44,7 @@
             display: flex;
             gap: 6px;
             align-items: center;
+            flex-wrap: wrap;
         }
         .btn-action {
             flex: 1;
@@ -60,6 +61,7 @@
             align-items: center;
             justify-content: center;
             gap: 4px;
+            min-width: 70px;
         }
         .btn-action:active {
             background-color: #0284c7;
@@ -183,12 +185,12 @@
             overflow: hidden;
         }
         .line-numbers {
-            width: 32px;
-            padding: 12px 2px;
+            width: 36px;
+            padding: 12px 4px;
             background-color: #f0f0f0;
             color: #888888;
             font-family: Consolas, Monaco, "Courier New", monospace !important;
-            font-size: 12px !important;
+            font-size: 15px !important;
             line-height: 1.5 !important;
             text-align: right;
             user-select: none;
@@ -216,6 +218,7 @@
             font-size: 15px !important;
             line-height: 1.5 !important;
             white-space: pre-wrap !important;
+            word-wrap: break-word !important;
             word-break: break-word !important;
             box-sizing: border-box !important;
             tab-size: 4;
@@ -230,6 +233,11 @@
             outline: none;
             -webkit-overflow-scrolling: touch;
         }
+        /* Fix per la selezione del testo di ricerca e della selezione manuale */
+        textarea::selection {
+            background-color: rgba(14, 165, 233, 0.4);
+            color: transparent;
+        }
         pre {
             z-index: 1;
             background: #ffffff !important;
@@ -243,6 +251,9 @@
             padding: 0 !important;
             background: transparent !important;
             color: #000000;
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
+            word-break: break-word !important;
         }
     </style>
 </head>
@@ -250,8 +261,10 @@
 
     <header>
         <div class="top-bar">
+            <button id="newBtn" class="btn-action">📄 Nuovo</button>
             <button id="openBtn" class="btn-action">📂 Apri</button>
             <button id="saveBtn" class="btn-action">💾 Salva</button>
+            <button id="saveAsBtn" class="btn-action">💾 Salva con nome</button>
             <button id="undoBtn" class="btn-action">↩ Annulla</button>
             <button id="redoBtn" class="btn-action">↪ Ripristina</button>
             <div class="menu-wrapper">
@@ -446,43 +459,10 @@
             highlightingContent.textContent = text;
             Prism.highlightElement(highlightingContent);
 
-            const font = "15px Consolas, Monaco, 'Courier New', monospace";
-            const canvas = updateEditor.canvas || (updateEditor.canvas = document.createElement("canvas"));
-            const context = canvas.getContext("2d");
-            context.font = font;
-
-            const textareaWidth = editor.clientWidth - 24;
+            // Ottimizzazione estrema: Rimosso il canvas che bloccava la textarea.
             const rawLines = editor.value.split('\n');
-            let lineNumHTML = '';
-
-            if (textareaWidth > 0) {
-                rawLines.forEach((lineText, index) => {
-                    lineNumHTML += (index + 1) + '\n';
-                    
-                    let words = lineText.split(' ');
-                    let currentLine = '';
-                    let wrappedLines = 0;
-
-                    for (let n = 0; n < words.length; n++) {
-                        let testLine = currentLine + words[n] + ' ';
-                        let metrics = context.measureText(testLine);
-                        if (metrics.width > textareaWidth && n > 0) {
-                            wrappedLines++;
-                            currentLine = words[n] + ' ';
-                        } else {
-                            currentLine = testLine;
-                        }
-                    }
-                    
-                    for (let w = 0; w < wrappedLines; w++) {
-                        lineNumHTML += '\n';
-                    }
-                });
-            } else {
-                lineNumHTML = rawLines.map((_, i) => i + 1).join('\n');
-            }
-
-            lineNumbers.textContent = lineNumHTML;
+            lineNumbers.textContent = rawLines.map((_, i) => i + 1).join('\n');
+            
             performSearch();
             syncScroll();
         }
@@ -542,11 +522,13 @@
                 const match = searchMatches[index];
                 editor.setSelectionRange(match.index, match.index + match.length);
                 searchCount.textContent = `${index + 1}/${searchMatches.length}`;
+                
+                // Forza il focus per rendere visibile l'evidenziazione CSS
+                editor.focus();
 
-                // Calcolo riga e scorrimento visivo automatico
                 const textBeforeMatch = editor.value.substring(0, match.index);
                 const lineNumber = textBeforeMatch.split('\n').length;
-                const lineHeight = 22.5; // 15px * 1.5 line-height
+                const lineHeight = 22.5; 
                 const targetScrollTop = (lineNumber - 1) * lineHeight - (editor.clientHeight / 2);
                 
                 editor.scrollTop = Math.max(0, targetScrollTop);
@@ -580,12 +562,33 @@
             debounceTimer = setTimeout(() => {
                 saveState();
                 updateEditor();
-            }, 100);
+            }, 50); // Timer ridotto per maggiore reattività
         });
 
         editor.addEventListener('scroll', syncScroll);
 
         // --- File System API ---
+        
+        // NUOVO FILE
+        document.getElementById('newBtn').addEventListener('click', async () => {
+            if (fileStatusDisplay.textContent === 'modificato') {
+                const confirmSave = confirm("Il documento attuale è stato modificato. Vuoi salvarlo prima di creare un nuovo file?");
+                if (confirmSave) {
+                    await document.getElementById('saveBtn').click();
+                }
+            }
+            fileHandle = null;
+            originalContent = '';
+            editor.value = '';
+            historyStack = [''];
+            historyIndex = 0;
+            fileNameDisplay.textContent = 'Senza titolo';
+            setLanguage('');
+            setFileStatus('originale');
+            updateEditor();
+        });
+
+        // APRI FILE
         document.getElementById('openBtn').addEventListener('click', async () => {
             try {
                 [fileHandle] = await window.showOpenFilePicker({
@@ -612,6 +615,7 @@
             }
         });
 
+        // SALVA FILE
         document.getElementById('saveBtn').addEventListener('click', async () => {
             try {
                 if (!fileHandle) {
@@ -631,10 +635,36 @@
                 originalContent = editor.value;
                 if (fileHandle.name) {
                     fileNameDisplay.textContent = fileHandle.name;
+                    setLanguage(fileHandle.name);
                 }
                 setFileStatus('salvato');
             } catch (err) {
                 console.log('Salvataggio annullato', err);
+            }
+        });
+
+        // SALVA CON NOME
+        document.getElementById('saveAsBtn').addEventListener('click', async () => {
+            try {
+                const newHandle = await window.showSaveFilePicker({
+                    types: [{
+                        description: 'File di testo e codice',
+                        accept: {
+                            'text/plain': ['.txt', '.html', '.htm', '.js', '.asp']
+                        }
+                    }]
+                });
+                const writable = await newHandle.createWritable();
+                await writable.write(editor.value);
+                await writable.close();
+                
+                fileHandle = newHandle;
+                originalContent = editor.value;
+                fileNameDisplay.textContent = fileHandle.name;
+                setLanguage(fileHandle.name);
+                setFileStatus('salvato');
+            } catch (err) {
+                console.log('Salvataggio con nome annullato', err);
             }
         });
 
