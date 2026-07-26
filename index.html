@@ -6,7 +6,7 @@
     <title>Editor DM8</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121212">
-    <!-- Componenti Prism aggiornati per supportare anche il CSS -->
+    <!-- Componenti Prism -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
@@ -165,7 +165,7 @@
             font-size: 11px;
         }
         #fileNameDisplay {
-            color: #ffffff; /* Nome del file bianco */
+            color: #ffffff;
             font-weight: bold;
         }
         .file-status-original {
@@ -190,7 +190,7 @@
             overflow: hidden;
         }
         .line-numbers {
-            width: 44px; /* Leggermente allargato per comodità */
+            width: 44px;
             padding: 12px 6px;
             background-color: #f0f0f0;
             color: #888888;
@@ -204,13 +204,18 @@
             white-space: pre-wrap;
             flex-shrink: 0;
         }
+        
+        /* Area di lavoro: adesso gestisce il colore di sfondo bianco */
         .work-area {
             position: relative;
             flex: 1;
             height: 100%;
             overflow: auto;
+            background-color: #ffffff; 
         }
-        textarea, pre {
+
+        /* Gestione Testo Condivisa */
+        .text-layer {
             position: absolute;
             top: 0;
             left: 0;
@@ -226,8 +231,8 @@
             tab-size: 4;
             letter-spacing: 0px;
         }
-        
-        /* Gestione 'Righe a capo' (Word Wrap) */
+
+        /* Wrap Settings */
         .wrap-enabled {
             white-space: pre-wrap !important;
             word-wrap: break-word !important;
@@ -240,24 +245,28 @@
             overflow-wrap: normal !important;
         }
 
-        textarea {
-            z-index: 2;
-            color: transparent !important;
-            background: transparent !important;
-            caret-color: #000000;
-            resize: none;
-            outline: none;
-            -webkit-overflow-scrolling: touch;
+        /* 1° Livello: Evidenziazioni di Ricerca */
+        #search-layer {
+            z-index: 1;
+            color: transparent !important; /* Testo invisibile, si vedono solo i mark */
+            pointer-events: none;
+            overflow: visible;
         }
-        textarea::selection {
-            background-color: rgba(14, 165, 233, 0.4);
+        #search-layer mark.mark-other {
+            background-color: #fef08a; /* Giallo pastello per le occorrenze normali */
             color: transparent;
         }
+        #search-layer mark.mark-current {
+            background-color: #f97316; /* Arancione per l'occorrenza selezionata */
+            color: transparent;
+        }
+
+        /* 2° Livello: Highlighting Codice Prism */
         pre {
-            z-index: 1;
-            background: #ffffff !important;
+            z-index: 2;
+            background: transparent !important; /* Trasparente così si vedono le evidenziazioni dietro */
             pointer-events: none;
-            overflow: visible; /* Modificato per scroll orizzontale */
+            overflow: visible; 
         }
         code {
             font-family: Consolas, Monaco, "Courier New", monospace !important;
@@ -266,6 +275,21 @@
             padding: 0 !important;
             background: transparent !important;
             color: #000000;
+        }
+
+        /* 3° Livello: Textarea */
+        textarea {
+            z-index: 3;
+            color: transparent !important;
+            background: transparent !important; /* Completamente trasparente */
+            caret-color: #000000;
+            resize: none;
+            outline: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        textarea::selection {
+            background-color: rgba(14, 165, 233, 0.4); /* Selezione blu manuale */
+            color: transparent;
         }
     </style>
 </head>
@@ -292,7 +316,6 @@
                         <span>Maiuscola dopo punto</span>
                     </div>
                     <div class="menu-divider"></div>
-                    <!-- Nuove impostazioni -->
                     <div class="menu-item" id="btnToggleWrap">
                         <span>Righe a capo</span>
                         <span id="wrapCheck">✓</span>
@@ -331,8 +354,10 @@
     <div class="editor-container">
         <div id="lineNumbers" class="line-numbers">1</div>
         <div class="work-area">
-            <pre id="highlighting" class="wrap-enabled"><code id="highlighting-content" class="language-plaintext wrap-enabled"></code></pre>
-            <textarea id="editor" class="wrap-enabled" placeholder="Scrivi qui o apri un file..." spellcheck="false"></textarea>
+            <!-- Nuova architettura a 3 layer -->
+            <div id="search-layer" class="text-layer wrap-enabled"></div>
+            <pre id="highlighting" class="text-layer wrap-enabled"><code id="highlighting-content" class="language-plaintext wrap-enabled"></code></pre>
+            <textarea id="editor" class="text-layer wrap-enabled" placeholder="Scrivi qui o apri un file..." spellcheck="false"></textarea>
         </div>
     </div>
 
@@ -342,6 +367,7 @@
         const editor = document.getElementById('editor');
         const highlightingContent = document.getElementById('highlighting-content');
         const highlighting = document.getElementById('highlighting');
+        const searchLayer = document.getElementById('search-layer');
         const lineNumbers = document.getElementById('lineNumbers');
         
         const fileNameDisplay = document.getElementById('fileNameDisplay');
@@ -378,7 +404,7 @@
             isWrapEnabled = !isWrapEnabled;
             document.getElementById('wrapCheck').textContent = isWrapEnabled ? '✓' : '';
             
-            const elements = [editor, highlighting, highlightingContent];
+            const elements = [editor, highlighting, highlightingContent, searchLayer];
             if (isWrapEnabled) {
                 elements.forEach(el => {
                     el.classList.remove('wrap-disabled');
@@ -502,6 +528,50 @@
             alert(`Statistiche Testo:\n\n• Caratteri totali: ${charCount}\n• Parole totali: ${wordCount}`);
         });
 
+        // --- Sicurezza HTML per Livello Ricerca ---
+        function escapeHTML(str) {
+            return str.replace(/&/g, '&amp;')
+                      .replace(/</g, '&lt;')
+                      .replace(/>/g, '&gt;')
+                      .replace(/"/g, '&quot;')
+                      .replace(/'/g, '&#039;');
+        }
+
+        // --- Generazione Livello di Ricerca Visivo (Layer 1) ---
+        function updateSearchLayer() {
+            let text = editor.value;
+            if (text.endsWith('\n')) {
+                text += ' ';
+            }
+            const query = searchInput.value;
+
+            if (!query) {
+                searchLayer.innerHTML = '';
+                return;
+            }
+
+            const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+            let lastIndex = 0;
+            let html = '';
+            let match;
+            let matchCount = 0;
+
+            while ((match = regex.exec(text)) !== null) {
+                const before = text.substring(lastIndex, match.index);
+                html += escapeHTML(before);
+                
+                // Distingue visivamente il risultato selezionato (Arancione) dagli altri (Gialli)
+                const isCurrent = (matchCount === currentMatchIndex);
+                const markClass = isCurrent ? 'mark-current' : 'mark-other';
+                html += `<mark class="${markClass}">${escapeHTML(match[0])}</mark>`;
+                
+                lastIndex = regex.lastIndex;
+                matchCount++;
+            }
+            html += escapeHTML(text.substring(lastIndex));
+            searchLayer.innerHTML = html;
+        }
+
         // --- Sincronizzazione ed Editor ---
         function updateEditor() {
             let text = editor.value;
@@ -512,7 +582,6 @@
             Prism.highlightElement(highlightingContent);
 
             const rawLines = editor.value.split('\n');
-            // Aggiunto spazio vuoto formattato per distanziare i numeri di riga
             lineNumbers.textContent = rawLines.map((_, i) => (i + 1) + ' ').join('\n');
             
             performSearch();
@@ -522,6 +591,10 @@
         function syncScroll() {
             highlighting.scrollTop = editor.scrollTop;
             highlighting.scrollLeft = editor.scrollLeft;
+            
+            searchLayer.scrollTop = editor.scrollTop;
+            searchLayer.scrollLeft = editor.scrollLeft;
+            
             lineNumbers.scrollTop = editor.scrollTop;
         }
 
@@ -553,6 +626,7 @@
             if (!query) {
                 searchCount.textContent = '0/0';
                 currentMatchIndex = -1;
+                updateSearchLayer();
                 return;
             }
 
@@ -571,38 +645,54 @@
                 currentMatchIndex = -1;
                 searchCount.textContent = '0/0';
             }
+            
+            updateSearchLayer();
         }
 
-        function scrollToAndHighlightMatch(index) {
+        // Il parametro 'shouldFocus' decide se passare il controllo alla textarea o meno
+        function scrollToAndHighlightMatch(index, shouldFocus = false) {
             if (index >= 0 && index < searchMatches.length) {
                 const match = searchMatches[index];
                 
-                // Forza il focus per lo scroll automatico del browser verso la selezione
-                // editor.focus();
-                editor.setSelectionRange(match.index, match.index + match.length);
                 searchCount.textContent = `${index + 1}/${searchMatches.length}`;
                 
+                // Aggiorna il livello visivo in modo che il mark arancione si sposti di conseguenza
+                updateSearchLayer(); 
+
+                const textBeforeMatch = editor.value.substring(0, match.index);
+                const lineNumber = textBeforeMatch.split('\n').length;
+                const lineHeight = 22.5; 
+                const targetScrollTop = (lineNumber - 1) * lineHeight - (editor.clientHeight / 2);
+                
+                editor.scrollTop = Math.max(0, targetScrollTop);
                 syncScroll();
+
+                if (shouldFocus) {
+                    editor.focus();
+                    editor.setSelectionRange(match.index, match.index + match.length);
+                }
             }
         }
 
+        // Durante la digitazione, calcola ed evidenzia visivamente MA senza rubare il focus
         searchInput.addEventListener('input', () => {
             currentMatchIndex = 0;
             performSearch();
-            scrollToAndHighlightMatch(currentMatchIndex);
+            scrollToAndHighlightMatch(currentMatchIndex, false); 
         });
 
+        // Quando si usano le frecce, esegue lo scroll e PASSA IL FOCUS alla textarea
         nextSearch.addEventListener('click', () => {
             if (searchMatches.length > 0) {
                 currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length;
-                scrollToAndHighlightMatch(currentMatchIndex);
+                scrollToAndHighlightMatch(currentMatchIndex, true); 
             }
         });
 
         prevSearch.addEventListener('click', () => {
             if (searchMatches.length > 0) {
                 currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
-                scrollToAndHighlightMatch(currentMatchIndex);
+                scrollToAndHighlightMatch(currentMatchIndex, true); 
             }
         });
 
