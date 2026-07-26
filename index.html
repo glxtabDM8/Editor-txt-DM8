@@ -79,13 +79,13 @@
             position: absolute;
             top: 48px;
             right: 0;
-            width: 220px;
+            width: 250px;
             background-color: #1e293b;
             border: 1px solid #475569;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             z-index: 200;
-            padding: 8px 0;
+            padding: 6px 0;
         }
         .dropdown-menu.show {
             display: block;
@@ -96,9 +96,12 @@
             justify-content: space-between;
             padding: 10px 16px;
             color: #f1f5f9;
-            font-size: 15px;
+            font-size: 14px;
             font-family: system-ui, -apple-system, sans-serif;
             cursor: pointer;
+        }
+        .menu-item:active {
+            background-color: #334155;
         }
         .menu-item input[type="checkbox"] {
             width: 18px;
@@ -109,7 +112,7 @@
         .menu-divider {
             height: 1px;
             background-color: #334155;
-            margin: 6px 0;
+            margin: 4px 0;
         }
         .search-bar {
             display: flex;
@@ -153,11 +156,11 @@
         }
         .line-numbers {
             width: 32px;
-            padding: 12px 3px;
+            padding: 16px 3px;
             background-color: #f0f0f0;
             color: #888888;
             font-family: Verdana, Geneva, sans-serif;
-            font-size: 13px;
+            font-size: 12px;
             line-height: 1.5;
             text-align: right;
             user-select: none;
@@ -178,16 +181,18 @@
             left: 0;
             width: 100%;
             height: 100%;
-            padding: 12px;
-            margin: 0;
-            border: none;
-            font-family: Verdana, Geneva, sans-serif;
-            font-size: 19px;
-            line-height: 1.5;
+            padding: 16px !important;
+            margin: 0 !important;
+            border: none !important;
+            font-family: Verdana, Geneva, sans-serif !important;
+            font-size: 18px !important;
+            line-height: 1.5 !important;
             white-space: pre;
             overflow: auto;
-            box-sizing: border-box;
+            box-sizing: border-box !important;
             tab-size: 4;
+            letter-spacing: normal;
+            word-spacing: normal;
         }
         body.word-wrap textarea, body.word-wrap pre {
             white-space: pre-wrap !important;
@@ -195,8 +200,8 @@
         }
         textarea {
             z-index: 2;
-            color: transparent;
-            background: transparent;
+            color: transparent !important;
+            background: transparent !important;
             caret-color: #000000;
             resize: none;
             outline: none;
@@ -209,10 +214,11 @@
         }
         code {
             font-family: Verdana, Geneva, sans-serif !important;
-            font-size: 19px !important;
+            font-size: 18px !important;
             line-height: 1.5 !important;
             padding: 0 !important;
             background: transparent !important;
+            color: #000000;
         }
     </style>
 </head>
@@ -230,11 +236,18 @@
                         <input type="checkbox" id="wordWrapToggle">
                     </label>
                     <div class="menu-divider"></div>
-                    <div class="menu-item" style="opacity: 0.4;">
-                        <span>— Riservato —</span>
+                    <div class="menu-item" id="btnUpper">
+                        <span>TUTTO MAIUSCOLO</span>
                     </div>
-                    <div class="menu-item" style="opacity: 0.4;">
-                        <span>— Riservato —</span>
+                    <div class="menu-item" id="btnLower">
+                        <span>tutto minuscolo</span>
+                    </div>
+                    <div class="menu-item" id="btnSentence">
+                        <span>Maiuscola dopo punto</span>
+                    </div>
+                    <div class="menu-divider"></div>
+                    <div class="menu-item" id="btnCharCount">
+                        <span>Conta caratteri</span>
                     </div>
                 </div>
             </div>
@@ -274,7 +287,7 @@
         let searchMatches = [];
         let currentMatchIndex = -1;
 
-        // --- Gestione Impostazioni Locali ---
+        // Impostazioni salvate
         const savedWordWrap = localStorage.getItem('dm8_word_wrap') === 'true';
         wordWrapToggle.checked = savedWordWrap;
         if (savedWordWrap) {
@@ -292,7 +305,7 @@
             updateEditor();
         });
 
-        // --- Gestione Menu Impostazioni ---
+        // Gestione Menu
         menuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             dropdownMenu.classList.toggle('show');
@@ -305,13 +318,37 @@
         });
 
         dropdownMenu.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (e.target.tagName !== 'INPUT') {
+            if (e.target.tagName !== 'INPUT' && !e.target.closest('label')) {
                 dropdownMenu.classList.remove('show');
             }
         });
 
-        // --- Editor e Sincronizzazione ---
+        // Funzioni Conversione Testo
+        document.getElementById('btnUpper').addEventListener('click', () => {
+            editor.value = editor.value.toUpperCase();
+            updateEditor();
+        });
+
+        document.getElementById('btnLower').addEventListener('click', () => {
+            editor.value = editor.value.toLowerCase();
+            updateEditor();
+        });
+
+        document.getElementById('btnSentence').addEventListener('click', () => {
+            let text = editor.value.toLowerCase();
+            editor.value = text.replace(/(^\s*|[.!?]\s+)([a-zàèéìòù])/g, (m, p1, p2) => p1 + p2.toUpperCase());
+            updateEditor();
+        });
+
+        // Conta Caratteri
+        document.getElementById('btnCharCount').addEventListener('click', () => {
+            const text = editor.value;
+            const charCount = text.length;
+            const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+            alert(`Statistiche Testo:\n\n• Caratteri totali: ${charCount}\n• Parole totali: ${wordCount}`);
+        });
+
+        // Aggiornamento sincronizzato
         function updateEditor() {
             let text = editor.value;
             if (text.endsWith("\n")) {
@@ -327,6 +364,7 @@
             }
             lineNumbers.textContent = numbers;
             performSearch();
+            syncScroll();
         }
 
         function syncScroll() {
@@ -347,7 +385,7 @@
             }
         }
 
-        // --- Funzione di Ricerca ---
+        // Ricerca
         function performSearch() {
             const query = searchInput.value;
             const text = editor.value;
@@ -408,7 +446,7 @@
         editor.addEventListener('input', updateEditor);
         editor.addEventListener('scroll', syncScroll);
 
-        // --- File System API ---
+        // Apertura / Salvataggio
         document.getElementById('openBtn').addEventListener('click', async () => {
             try {
                 [fileHandle] = await window.showOpenFilePicker({
