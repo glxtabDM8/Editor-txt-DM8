@@ -8,7 +8,7 @@
   "theme_color": "#121212",
   "icons": [
     {
-      "src": "icon-448.jpg",
+      "src": "DM8_icon_512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
