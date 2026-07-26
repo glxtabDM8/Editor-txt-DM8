@@ -578,7 +578,7 @@
                 const match = searchMatches[index];
                 
                 // Forza il focus per lo scroll automatico del browser verso la selezione
-                editor.focus();
+                // editor.focus();
                 editor.setSelectionRange(match.index, match.index + match.length);
                 searchCount.textContent = `${index + 1}/${searchMatches.length}`;
                 
