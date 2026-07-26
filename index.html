@@ -1,210 +1,227 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Editor TXT DM8</title>
-  <meta name="theme-color" content="#121212">
-  
-  <!-- Manifest PWA Integrato -->
-  <link rel="manifest" href="manifest.json">
-
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: system-ui, -apple-system, Roboto, sans-serif;
-      background-color: white;
-      color: #e0e0e0;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
-    }
-    
-    /* Toolbar Superiore */
-    .toolbar {
-      background-color: #1e1e1e;
-      padding: 10px;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      border-bottom: 1px solid #333;
-      flex-wrap: wrap;
-    }
-
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    button:active { opacity: 0.8; }
-    button.save-btn { background-color: #28a745; }
-
-    /* Barra di Ricerca */
-    .search-box {
-      display: flex;
-      gap: 4px;
-      margin-left: auto;
-      align-items: center;
-    }
-
-    input[type="text"] {
-      background-color: #2a2a2a;
-      border: 1px solid #444;
-      color: white;
-      padding: 6px 10px;
-      border-radius: 4px;
-      font-size: 14px;
-      outline: none;
-      width: 140px;
-    }
-
-    .file-info {
-      font-size: 12px;
-      color: #888;
-      width: 100%;
-      margin-top: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Area Testo */
-    textarea {
-      flex: 1;
-      background-color: white;
-      color: black;
-      border: none;
-      padding: 15px;
-      font-family: 'Verdana';
-      font-size: 17px;
-      line-height: 1.4;
-      resize: none;
-      outline: none;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Editor DM8</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-aspnet.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        html, body {
+            height: 100%;
+            background-color: #121212;
+            overflow: hidden;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100dvh;
+            padding: 10px;
+        }
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            gap: 10px;
+            padding-bottom: 10px;
+            background-color: #121212;
+            flex-shrink: 0;
+        }
+        button {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: #0ea5e9;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button:active {
+            background-color: #0284c7;
+        }
+        .editor-container {
+            position: relative;
+            flex: 1;
+            display: flex;
+            background-color: #ffffff;
+            border: 1px solid #cccccc;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .line-numbers {
+            width: 45px;
+            padding: 12px 5px;
+            background-color: #f0f0f0;
+            color: #888888;
+            font-family: Verdana, Geneva, sans-serif;
+            font-size: 19px;
+            line-height: 1.5;
+            text-align: right;
+            user-select: none;
+            border-right: 1px solid #e0e0e0;
+            overflow: hidden;
+            white-space: pre;
+            flex-shrink: 0;
+        }
+        .work-area {
+            position: relative;
+            flex: 1;
+            height: 100%;
+            overflow: auto;
+        }
+        textarea, pre {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 12px;
+            margin: 0;
+            border: none;
+            font-family: Verdana, Geneva, sans-serif;
+            font-size: 19px;
+            line-height: 1.5;
+            white-space: pre;
+            overflow: auto;
+            box-sizing: border-box;
+            tab-size: 4;
+        }
+        textarea {
+            z-index: 2;
+            color: transparent;
+            background: transparent;
+            caret-color: #000000;
+            resize: none;
+            outline: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        pre {
+            z-index: 1;
+            background: #ffffff !important;
+            pointer-events: none;
+        }
+        code {
+            font-family: Verdana, Geneva, sans-serif !important;
+            font-size: 19px !important;
+            line-height: 1.5 !important;
+            padding: 0 !important;
+            background: transparent !important;
+        }
+    </style>
 </head>
 <body>
 
-  <div class="toolbar">
-    <button onclick="openFile()">ðŸ“‚ Apri</button>
-    <button class="save-btn" onclick="saveFile()">ðŸ’¾ Salva</button>
-    
-    <div class="search-box">
-      <input type="text" id="searchInput" placeholder="Cerca...">
-      <button onclick="findText()">ðŸ”</button>
+    <header>
+        <button id="openBtn">📂 Apri</button>
+        <button id="saveBtn">💾 Salva</button>
+    </header>
+
+    <div class="editor-container">
+        <div id="lineNumbers" class="line-numbers">1</div>
+        <div class="work-area">
+            <pre id="highlighting"><code id="highlighting-content" class="language-plaintext"></code></pre>
+            <textarea id="editor" placeholder="Scrivi qui o apri un file..." spellcheck="false"></textarea>
+        </div>
     </div>
 
-    <div class="file-info" id="fileInfo">Nessun file aperto</div>
-  </div>
+    <script>
+        let fileHandle;
+        const editor = document.getElementById('editor');
+        const highlightingContent = document.getElementById('highlighting-content');
+        const highlighting = document.getElementById('highlighting');
+        const lineNumbers = document.getElementById('lineNumbers');
 
-  <textarea id="editor" placeholder="Scrivi qui o apri un file .txt..."></textarea>
+        function updateEditor() {
+            let text = editor.value;
+            if (text.endsWith("\n")) {
+                text += " ";
+            }
+            highlightingContent.textContent = text;
+            Prism.highlightElement(highlightingContent);
 
-  <!-- Input nascosto di fallback se l'API nativa FileSystem non Ã¨ attiva -->
-  <input type="file" id="fallbackInput" accept=".txt,text/plain" style="display:none" onchange="readFallbackFile(this)">
-
-  <script>
-    let fileHandle = null;
-    const editor = document.getElementById('editor');
-    const fileInfo = document.getElementById('fileInfo');
-
-    // 1. Apri il file .txt
-    async function openFile() {
-      if ('showOpenFilePicker' in window) {
-        try {
-          [fileHandle] = await window.showOpenFilePicker({
-            types: [{ description: 'File di testo', accept: { 'text/plain': ['.txt'] } }]
-          });
-          const file = await fileHandle.getFile();
-          editor.value = await file.text();
-          fileInfo.textContent = `File aperto: ${file.name}`;
-        } catch (err) {
-          if (err.name !== 'AbortError') alert("Errore nell'apertura del file");
+            const lines = editor.value.split('\n').length;
+            let numbers = '';
+            for (let i = 1; i <= lines; i++) {
+                numbers += i + '\n';
+            }
+            lineNumbers.textContent = numbers;
         }
-      } else {
-        // Fallback per browser vecchi o limitati
-        document.getElementById('fallbackInput').click();
-      }
-    }
 
-    // Fallback Lettura
-    function readFallbackFile(input) {
-      const file = input.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        editor.value = e.target.result;
-        fileInfo.textContent = `File aperto: ${file.name} (ModalitÃ  Lettura)`;
-        fileHandle = null; // Il salvataggio diretto non Ã¨ gestibile via fallback
-      };
-      reader.readAsText(file);
-    }
-
-    // 2. Salva il file .txt
-    async function saveFile() {
-      if (fileHandle) {
-        try {
-          const writable = await fileHandle.createWritable();
-          await writable.write(editor.value);
-          await writable.close();
-          alert("File salvato con successo!");
-        } catch (err) {
-          alert("Impossibile salvare direttamente. Scarico una copia...");
-          downloadCopy();
+        function syncScroll() {
+            highlighting.scrollTop = editor.scrollTop;
+            highlighting.scrollLeft = editor.scrollLeft;
+            lineNumbers.scrollTop = editor.scrollTop;
         }
-      } else {
-        downloadCopy();
-      }
-    }
 
-    // Salvataggio tramite download se aperto in modalitÃ  fallback
-    function downloadCopy() {
-      const blob = new Blob([editor.value], { type: 'text/plain' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'documento.txt';
-      a.click();
-      URL.revokeObjectURL(a.href);
-    }
-
-    // 3. Ricerca di testo avanzata
-    function findText() {
-      const query = document.getElementById('searchInput').value;
-      if (!query) return;
-
-      const content = editor.value;
-      const startIndex = content.toLowerCase().indexOf(query.toLowerCase(), editor.selectionEnd);
-      
-      if (startIndex !== -1) {
-        editor.focus();
-        editor.setSelectionRange(startIndex, startIndex + query.length);
-      } else {
-        // Se non trova nulla dopo il cursore, ricomincia dall'inizio
-        const firstIndex = content.toLowerCase().indexOf(query.toLowerCase());
-        if (firstIndex !== -1) {
-          editor.focus();
-          editor.setSelectionRange(firstIndex, firstIndex + query.length);
-        } else {
-          alert("Nessun risultato trovato.");
+        function setLanguage(fileName) {
+            const ext = fileName ? fileName.split('.').pop().toLowerCase() : '';
+            highlightingContent.className = '';
+            if (ext === 'html' || ext === 'htm' || ext === 'asp') {
+                highlightingContent.classList.add('language-markup');
+            } else if (ext === 'js') {
+                highlightingContent.classList.add('language-javascript');
+            } else {
+                highlightingContent.classList.add('language-plaintext');
+            }
         }
-      }
-    }
 
-    // 4. Registrazione Service Worker Offline integrata (PWA)
-    if ('serviceWorker' in navigator) {
-      const swCode = `
-        self.addEventListener('fetch', (e) => {
-          e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+        editor.addEventListener('input', updateEditor);
+        editor.addEventListener('scroll', syncScroll);
+
+        document.getElementById('openBtn').addEventListener('click', async () => {
+            try {
+                [fileHandle] = await window.showOpenFilePicker({
+                    types: [{
+                        description: 'File di testo e codice',
+                        accept: {
+                            'text/plain': ['.txt', '.html', '.htm', '.js', '.asp']
+                        }
+                    }]
+                });
+                const file = await fileHandle.getFile();
+                setLanguage(file.name);
+                editor.value = await file.text();
+                updateEditor();
+            } catch (err) {
+                console.log('Apertura annullata', err);
+            }
         });
-      `;
-      const blob = new Blob([swCode], { type: 'text/javascript' });
-      navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
-    }
-  </script>
+
+        document.getElementById('saveBtn').addEventListener('click', async () => {
+            try {
+                if (!fileHandle) {
+                    fileHandle = await window.showSaveFilePicker({
+                        types: [{
+                            description: 'File di testo e codice',
+                            accept: {
+                                'text/plain': ['.txt', '.html', '.htm', '.js', '.asp']
+                            }
+                        }]
+                    });
+                }
+                const writable = await fileHandle.createWritable();
+                await writable.write(editor.value);
+                await writable.close();
+                alert('File salvato con successo!');
+            } catch (err) {
+                console.log('Salvataggio annullato', err);
+            }
+        });
+
+        updateEditor();
+    </script>
 </body>
 </html>
