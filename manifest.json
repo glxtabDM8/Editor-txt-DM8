@@ -1,13 +1,22 @@
 {
-  "name": "Editor TXT Sicuro",
-  "short_name": "TXT Editor",
-  "start_url": "/",
+  "name": "Editor txt DM8",
+  "short_name": "Editor DM8",
+  "description": "Editor di testo .txt semplice e sicuro per Android",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#121212",
   "theme_color": "#121212",
+  "icons": [
+    {
+      "src": "icon-448.jog",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
   "file_handlers": [
     {
-      "action": "/",
+      "action": "./",
       "accept": {
         "text/plain": [".txt"]
       }
