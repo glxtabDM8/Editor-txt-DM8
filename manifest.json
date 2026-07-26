@@ -1,0 +1,16 @@
+{
+  "name": "Editor TXT Sicuro",
+  "short_name": "TXT Editor",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "text/plain": [".txt"]
+      }
+    }
+  ]
+}
