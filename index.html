@@ -6,11 +6,6 @@
     <title>Editor DM8</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121212">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-aspnet.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
     <style>
         * {
             box-sizing: border-box;
@@ -21,6 +16,7 @@
             height: 100%;
             background-color: #121212;
             overflow: hidden;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
         body {
             display: flex;
@@ -46,32 +42,31 @@
         }
         .btn-action {
             flex: 1;
-            padding: 9px 4px;
+            padding: 8px 4px;
             font-size: 13px;
-            font-weight: bold;
+            font-weight: 600;
             background-color: #0ea5e9;
-            color: white;
+            color: #ffffff;
             border: none;
             border-radius: 6px;
             cursor: pointer;
             white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
         }
         .btn-action:active {
             background-color: #0284c7;
-        }
-        .btn-icon {
-            padding: 9px 10px;
-            font-size: 14px;
-            background-color: #334155;
         }
         .menu-wrapper {
             position: relative;
         }
         .btn-menu {
             width: 36px;
-            height: 36px;
+            height: 34px;
             background-color: #334155;
-            color: white;
+            color: #ffffff;
             border: none;
             border-radius: 6px;
             font-size: 18px;
@@ -83,9 +78,9 @@
         .dropdown-menu {
             display: none;
             position: absolute;
-            top: 42px;
+            top: 40px;
             right: 0;
-            width: 230px;
+            width: 220px;
             background-color: #1e293b;
             border: 1px solid #475569;
             border-radius: 8px;
@@ -103,7 +98,6 @@
             padding: 10px 14px;
             color: #f1f5f9;
             font-size: 13px;
-            font-family: system-ui, -apple-system, sans-serif;
             cursor: pointer;
         }
         .menu-item:active {
@@ -138,7 +132,7 @@
         .btn-search {
             padding: 7px 10px;
             background-color: #334155;
-            color: white;
+            color: #ffffff;
             border: none;
             border-radius: 6px;
             font-size: 12px;
@@ -146,13 +140,12 @@
         }
         .btn-replace {
             background-color: #0ea5e9;
-            font-weight: bold;
+            font-weight: 600;
         }
         .search-count {
             color: #94a3b8;
             font-size: 11px;
-            font-family: system-ui, -apple-system, sans-serif;
-            min-width: 35px;
+            min-width: 38px;
             text-align: center;
         }
         .editor-container {
@@ -165,65 +158,44 @@
             overflow: hidden;
         }
         .line-numbers {
-            width: 32px;
-            padding: 12px 2px;
+            width: 36px;
+            padding: 12px 4px;
             background-color: #f0f0f0;
             color: #888888;
-            font-family: Verdana, Geneva, sans-serif;
-            font-size: 11px;
+            font-family: monospace;
+            font-size: 13px;
             line-height: 1.5;
             text-align: right;
             user-select: none;
             border-right: 1px solid #e0e0e0;
             overflow: hidden;
-            white-space: pre-wrap;
+            white-space: pre;
             flex-shrink: 0;
         }
         .work-area {
             position: relative;
             flex: 1;
             height: 100%;
-            overflow: auto;
-        }
-        textarea, pre {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            padding: 12px !important;
-            margin: 0 !important;
-            border: none !important;
-            font-family: Verdana, Geneva, sans-serif !important;
-            font-size: 17px !important;
-            line-height: 1.5 !important;
-            white-space: pre-wrap !important;
-            word-break: break-word !important;
-            overflow: auto;
-            box-sizing: border-box !important;
-            tab-size: 4;
         }
         textarea {
-            z-index: 2;
-            color: transparent !important;
-            background: transparent !important;
-            caret-color: #000000;
+            width: 100%;
+            height: 100%;
+            padding: 12px;
+            margin: 0;
+            border: none;
+            font-family: Consolas, Monaco, "Courier New", monospace;
+            font-size: 15px;
+            line-height: 1.5;
+            color: #111827;
+            background-color: #ffffff;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-y: auto;
+            box-sizing: border-box;
             resize: none;
             outline: none;
+            tab-size: 4;
             -webkit-overflow-scrolling: touch;
-        }
-        pre {
-            z-index: 1;
-            background: #ffffff !important;
-            pointer-events: none;
-        }
-        code {
-            font-family: Verdana, Geneva, sans-serif !important;
-            font-size: 17px !important;
-            line-height: 1.5 !important;
-            padding: 0 !important;
-            background: transparent !important;
-            color: #000000;
         }
     </style>
 </head>
@@ -233,8 +205,8 @@
         <div class="top-bar">
             <button id="openBtn" class="btn-action">📂 Apri</button>
             <button id="saveBtn" class="btn-action">💾 Salva</button>
-            <button id="undoBtn" class="btn-action btn-icon">↩️</button>
-            <button id="redoBtn" class="btn-action btn-icon">↪️</button>
+            <button id="undoBtn" class="btn-action">↩ Annulla</button>
+            <button id="redoBtn" class="btn-action">↪ Ripristina</button>
             <div class="menu-wrapper">
                 <button id="menuBtn" class="btn-menu">⋮</button>
                 <div id="dropdownMenu" class="dropdown-menu">
@@ -259,7 +231,7 @@
             <input type="text" id="searchInput" class="search-input" placeholder="Cerca...">
             <button id="prevSearch" class="btn-search">▲</button>
             <button id="nextSearch" class="btn-search">▼</button>
-            <button id="toggleReplace" class="btn-search">🔄</button>
+            <button id="toggleReplace" class="btn-search">⇄</button>
             <span id="searchCount" class="search-count">0/0</span>
         </div>
 
@@ -272,7 +244,6 @@
     <div class="editor-container">
         <div id="lineNumbers" class="line-numbers">1</div>
         <div class="work-area">
-            <pre id="highlighting"><code id="highlighting-content" class="language-plaintext"></code></pre>
             <textarea id="editor" placeholder="Scrivi qui o apri un file..." spellcheck="false"></textarea>
         </div>
     </div>
@@ -280,8 +251,6 @@
     <script>
         let fileHandle;
         const editor = document.getElementById('editor');
-        const highlightingContent = document.getElementById('highlighting-content');
-        const highlighting = document.getElementById('highlighting');
         const lineNumbers = document.getElementById('lineNumbers');
         
         const menuBtn = document.getElementById('menuBtn');
@@ -296,7 +265,7 @@
         const replaceInput = document.getElementById('replaceInput');
         const btnReplace = document.getElementById('btnReplace');
 
-        // --- Undo / Redo Management ---
+        // --- Gestione Undo / Redo ---
         let historyStack = [''];
         let historyIndex = 0;
         let isUndoRedoAction = false;
@@ -357,7 +326,6 @@
             dropdownMenu.classList.remove('show');
         });
 
-        // Conversione Testo
         document.getElementById('btnUpper').addEventListener('click', () => {
             editor.value = editor.value.toUpperCase();
             saveState();
@@ -384,15 +352,8 @@
             alert(`Statistiche Testo:\n\n• Caratteri totali: ${charCount}\n• Parole totali: ${wordCount}`);
         });
 
-        // --- Editor e Sincronizzazione ---
+        // --- Aggiornamento Editor e Righe ---
         function updateEditor() {
-            let text = editor.value;
-            if (text.endsWith("\n")) {
-                text += " ";
-            }
-            highlightingContent.textContent = text;
-            Prism.highlightElement(highlightingContent);
-
             const lines = editor.value.split('\n').length;
             let numbers = '';
             for (let i = 1; i <= lines; i++) {
@@ -404,24 +365,10 @@
         }
 
         function syncScroll() {
-            highlighting.scrollTop = editor.scrollTop;
-            highlighting.scrollLeft = editor.scrollLeft;
             lineNumbers.scrollTop = editor.scrollTop;
         }
 
-        function setLanguage(fileName) {
-            const ext = fileName ? fileName.split('.').pop().toLowerCase() : '';
-            highlightingContent.className = '';
-            if (ext === 'html' || ext === 'htm' || ext === 'asp') {
-                highlightingContent.classList.add('language-markup');
-            } else if (ext === 'js') {
-                highlightingContent.classList.add('language-javascript');
-            } else {
-                highlightingContent.classList.add('language-plaintext');
-            }
-        }
-
-        // --- Ricerca ---
+        // --- Ricerca (Senza perdita di Focus) ---
         let searchMatches = [];
         let currentMatchIndex = -1;
 
@@ -453,10 +400,9 @@
             }
         }
 
-        function selectMatch(index) {
+        function highlightMatch(index) {
             if (index >= 0 && index < searchMatches.length) {
                 const match = searchMatches[index];
-                editor.focus();
                 editor.setSelectionRange(match.index, match.index + match.length);
                 searchCount.textContent = `${index + 1}/${searchMatches.length}`;
             }
@@ -465,33 +411,33 @@
         searchInput.addEventListener('input', () => {
             currentMatchIndex = 0;
             performSearch();
-            selectMatch(currentMatchIndex);
+            highlightMatch(currentMatchIndex);
         });
 
         nextSearch.addEventListener('click', () => {
             if (searchMatches.length > 0) {
                 currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length;
-                selectMatch(currentMatchIndex);
+                highlightMatch(currentMatchIndex);
             }
         });
 
         prevSearch.addEventListener('click', () => {
             if (searchMatches.length > 0) {
                 currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
-                selectMatch(currentMatchIndex);
+                highlightMatch(currentMatchIndex);
             }
         });
 
         let debounceTimer;
         editor.addEventListener('input', () => {
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(saveState, 400);
+            debounceTimer = setTimeout(saveState, 300);
             updateEditor();
         });
 
         editor.addEventListener('scroll', syncScroll);
 
-        // --- File System ---
+        // --- File System API ---
         document.getElementById('openBtn').addEventListener('click', async () => {
             try {
                 [fileHandle] = await window.showOpenFilePicker({
@@ -503,7 +449,6 @@
                     }]
                 });
                 const file = await fileHandle.getFile();
-                setLanguage(file.name);
                 editor.value = await file.text();
                 historyStack = [editor.value];
                 historyIndex = 0;
