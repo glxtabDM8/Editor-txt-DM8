@@ -204,8 +204,6 @@
             white-space: pre-wrap;
             flex-shrink: 0;
         }
-        
-        /* Area di lavoro: adesso gestisce il colore di sfondo bianco */
         .work-area {
             position: relative;
             flex: 1;
@@ -213,8 +211,6 @@
             overflow: auto;
             background-color: #ffffff; 
         }
-
-        /* Gestione Testo Condivisa */
         .text-layer {
             position: absolute;
             top: 0;
@@ -245,26 +241,9 @@
             overflow-wrap: normal !important;
         }
 
-        /* 1° Livello: Evidenziazioni di Ricerca */
-        #search-layer {
-            z-index: 1;
-            color: transparent !important; /* Testo invisibile, si vedono solo i mark */
-            pointer-events: none;
-            overflow: visible;
-        }
-        #search-layer mark.mark-other {
-            background-color: #fef08a; /* Giallo pastello per le occorrenze normali */
-            color: transparent;
-        }
-        #search-layer mark.mark-current {
-            background-color: #f97316; /* Arancione per l'occorrenza selezionata */
-            color: transparent;
-        }
-
-        /* 2° Livello: Highlighting Codice Prism */
         pre {
-            z-index: 2;
-            background: transparent !important; /* Trasparente così si vedono le evidenziazioni dietro */
+            z-index: 1;
+            background: transparent !important;
             pointer-events: none;
             overflow: visible; 
         }
@@ -277,18 +256,17 @@
             color: #000000;
         }
 
-        /* 3° Livello: Textarea */
         textarea {
-            z-index: 3;
+            z-index: 2;
             color: transparent !important;
-            background: transparent !important; /* Completamente trasparente */
+            background: transparent !important;
             caret-color: #000000;
             resize: none;
             outline: none;
             -webkit-overflow-scrolling: touch;
         }
         textarea::selection {
-            background-color: rgba(14, 165, 233, 0.4); /* Selezione blu manuale */
+            background-color: rgba(14, 165, 233, 0.4);
             color: transparent;
         }
     </style>
@@ -354,8 +332,6 @@
     <div class="editor-container">
         <div id="lineNumbers" class="line-numbers">1</div>
         <div class="work-area">
-            <!-- Nuova architettura a 3 layer -->
-            <div id="search-layer" class="text-layer wrap-enabled"></div>
             <pre id="highlighting" class="text-layer wrap-enabled"><code id="highlighting-content" class="language-plaintext wrap-enabled"></code></pre>
             <textarea id="editor" class="text-layer wrap-enabled" placeholder="Scrivi qui o apri un file..." spellcheck="false"></textarea>
         </div>
@@ -367,7 +343,6 @@
         const editor = document.getElementById('editor');
         const highlightingContent = document.getElementById('highlighting-content');
         const highlighting = document.getElementById('highlighting');
-        const searchLayer = document.getElementById('search-layer');
         const lineNumbers = document.getElementById('lineNumbers');
         
         const fileNameDisplay = document.getElementById('fileNameDisplay');
@@ -404,7 +379,7 @@
             isWrapEnabled = !isWrapEnabled;
             document.getElementById('wrapCheck').textContent = isWrapEnabled ? '✓' : '';
             
-            const elements = [editor, highlighting, highlightingContent, searchLayer];
+            const elements = [editor, highlighting, highlightingContent];
             if (isWrapEnabled) {
                 elements.forEach(el => {
                     el.classList.remove('wrap-disabled');
@@ -528,50 +503,6 @@
             alert(`Statistiche Testo:\n\n• Caratteri totali: ${charCount}\n• Parole totali: ${wordCount}`);
         });
 
-        // --- Sicurezza HTML per Livello Ricerca ---
-        function escapeHTML(str) {
-            return str.replace(/&/g, '&amp;')
-                      .replace(/</g, '&lt;')
-                      .replace(/>/g, '&gt;')
-                      .replace(/"/g, '&quot;')
-                      .replace(/'/g, '&#039;');
-        }
-
-        // --- Generazione Livello di Ricerca Visivo (Layer 1) ---
-        function updateSearchLayer() {
-            let text = editor.value;
-            if (text.endsWith('\n')) {
-                text += ' ';
-            }
-            const query = searchInput.value;
-
-            if (!query) {
-                searchLayer.innerHTML = '';
-                return;
-            }
-
-            const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-            let lastIndex = 0;
-            let html = '';
-            let match;
-            let matchCount = 0;
-
-            while ((match = regex.exec(text)) !== null) {
-                const before = text.substring(lastIndex, match.index);
-                html += escapeHTML(before);
-                
-                // Distingue visivamente il risultato selezionato (Arancione) dagli altri (Gialli)
-                const isCurrent = (matchCount === currentMatchIndex);
-                const markClass = isCurrent ? 'mark-current' : 'mark-other';
-                html += `<mark class="${markClass}">${escapeHTML(match[0])}</mark>`;
-                
-                lastIndex = regex.lastIndex;
-                matchCount++;
-            }
-            html += escapeHTML(text.substring(lastIndex));
-            searchLayer.innerHTML = html;
-        }
-
         // --- Sincronizzazione ed Editor ---
         function updateEditor() {
             let text = editor.value;
@@ -591,10 +522,6 @@
         function syncScroll() {
             highlighting.scrollTop = editor.scrollTop;
             highlighting.scrollLeft = editor.scrollLeft;
-            
-            searchLayer.scrollTop = editor.scrollTop;
-            searchLayer.scrollLeft = editor.scrollLeft;
-            
             lineNumbers.scrollTop = editor.scrollTop;
         }
 
@@ -626,7 +553,6 @@
             if (!query) {
                 searchCount.textContent = '0/0';
                 currentMatchIndex = -1;
-                updateSearchLayer();
                 return;
             }
 
@@ -645,20 +571,15 @@
                 currentMatchIndex = -1;
                 searchCount.textContent = '0/0';
             }
-            
-            updateSearchLayer();
         }
 
-        // Il parametro 'shouldFocus' decide se passare il controllo alla textarea o meno
+        // Il parametro 'shouldFocus' decide se passare il controllo alla textarea
         function scrollToAndHighlightMatch(index, shouldFocus = false) {
             if (index >= 0 && index < searchMatches.length) {
                 const match = searchMatches[index];
-                
                 searchCount.textContent = `${index + 1}/${searchMatches.length}`;
-                
-                // Aggiorna il livello visivo in modo che il mark arancione si sposti di conseguenza
-                updateSearchLayer(); 
 
+                // Calcolo dello scroll
                 const textBeforeMatch = editor.value.substring(0, match.index);
                 const lineNumber = textBeforeMatch.split('\n').length;
                 const lineHeight = 22.5; 
@@ -667,21 +588,24 @@
                 editor.scrollTop = Math.max(0, targetScrollTop);
                 syncScroll();
 
+                // Imposta sempre la selezione interna per tenere traccia della posizione
+                editor.setSelectionRange(match.index, match.index + match.length);
+                
+                // Se viene richiesto (tramite le freccette), sposta il cursore sulla textarea per evidenziare
                 if (shouldFocus) {
                     editor.focus();
-                    editor.setSelectionRange(match.index, match.index + match.length);
                 }
             }
         }
 
-        // Durante la digitazione, calcola ed evidenzia visivamente MA senza rubare il focus
+        // Durante la digitazione: calcola ed esegue lo scroll, ma NON ruba il focus
         searchInput.addEventListener('input', () => {
             currentMatchIndex = 0;
             performSearch();
             scrollToAndHighlightMatch(currentMatchIndex, false); 
         });
 
-        // Quando si usano le frecce, esegue lo scroll e PASSA IL FOCUS alla textarea
+        // Cliccando le freccette: esegue lo scroll e PASSA IL FOCUS alla textarea
         nextSearch.addEventListener('click', () => {
             if (searchMatches.length > 0) {
                 currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length;
