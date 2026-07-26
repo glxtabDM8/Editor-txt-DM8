@@ -6,6 +6,11 @@
     <title>Editor DM8</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121212">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-aspnet.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
     <style>
         * {
             box-sizing: border-box;
@@ -148,6 +153,26 @@
             min-width: 38px;
             text-align: center;
         }
+        .file-info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 6px;
+            font-size: 11px;
+            color: #888888;
+        }
+        .file-status-original {
+            color: #ffffff;
+            font-weight: bold;
+        }
+        .file-status-modified {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        .file-status-saved {
+            color: #22c55e;
+            font-weight: bold;
+        }
         .editor-container {
             position: relative;
             flex: 1;
@@ -158,44 +183,66 @@
             overflow: hidden;
         }
         .line-numbers {
-            width: 36px;
-            padding: 12px 4px;
+            width: 32px;
+            padding: 12px 2px;
             background-color: #f0f0f0;
             color: #888888;
-            font-family: monospace;
-            font-size: 13px;
-            line-height: 1.5;
+            font-family: Consolas, Monaco, "Courier New", monospace !important;
+            font-size: 12px !important;
+            line-height: 1.5 !important;
             text-align: right;
             user-select: none;
             border-right: 1px solid #e0e0e0;
             overflow: hidden;
-            white-space: pre;
+            white-space: pre-wrap;
             flex-shrink: 0;
         }
         .work-area {
             position: relative;
             flex: 1;
             height: 100%;
+            overflow: auto;
         }
-        textarea {
+        textarea, pre {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            padding: 12px;
-            margin: 0;
-            border: none;
-            font-family: Consolas, Monaco, "Courier New", monospace;
-            font-size: 15px;
-            line-height: 1.5;
-            color: #111827;
-            background-color: #ffffff;
-            white-space: pre-wrap;
-            word-break: break-word;
-            overflow-y: auto;
-            box-sizing: border-box;
+            padding: 12px !important;
+            margin: 0 !important;
+            border: none !important;
+            font-family: Consolas, Monaco, "Courier New", monospace !important;
+            font-size: 15px !important;
+            line-height: 1.5 !important;
+            white-space: pre-wrap !important;
+            word-break: break-word !important;
+            box-sizing: border-box !important;
+            tab-size: 4;
+            letter-spacing: 0px;
+        }
+        textarea {
+            z-index: 2;
+            color: transparent !important;
+            background: transparent !important;
+            caret-color: #000000;
             resize: none;
             outline: none;
-            tab-size: 4;
             -webkit-overflow-scrolling: touch;
+        }
+        pre {
+            z-index: 1;
+            background: #ffffff !important;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        code {
+            font-family: Consolas, Monaco, "Courier New", monospace !important;
+            font-size: 15px !important;
+            line-height: 1.5 !important;
+            padding: 0 !important;
+            background: transparent !important;
+            color: #000000;
         }
     </style>
 </head>
@@ -239,20 +286,32 @@
             <input type="text" id="replaceInput" class="search-input" placeholder="Sostituisci con...">
             <button id="btnReplace" class="btn-search btn-replace">Sostituisci</button>
         </div>
+
+        <div class="file-info-bar">
+            <span id="fileNameDisplay">Senza titolo</span>
+            <span id="fileStatusDisplay" class="file-status-original">originale</span>
+        </div>
     </header>
 
     <div class="editor-container">
         <div id="lineNumbers" class="line-numbers">1</div>
         <div class="work-area">
+            <pre id="highlighting"><code id="highlighting-content" class="language-plaintext"></code></pre>
             <textarea id="editor" placeholder="Scrivi qui o apri un file..." spellcheck="false"></textarea>
         </div>
     </div>
 
     <script>
         let fileHandle;
+        let originalContent = '';
         const editor = document.getElementById('editor');
+        const highlightingContent = document.getElementById('highlighting-content');
+        const highlighting = document.getElementById('highlighting');
         const lineNumbers = document.getElementById('lineNumbers');
         
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const fileStatusDisplay = document.getElementById('fileStatusDisplay');
+
         const menuBtn = document.getElementById('menuBtn');
         const dropdownMenu = document.getElementById('dropdownMenu');
         
@@ -265,7 +324,30 @@
         const replaceInput = document.getElementById('replaceInput');
         const btnReplace = document.getElementById('btnReplace');
 
-        // --- Gestione Undo / Redo ---
+        // --- Gestione Stato File ---
+        function setFileStatus(status) {
+            fileStatusDisplay.className = '';
+            if (status === 'originale') {
+                fileStatusDisplay.textContent = 'originale';
+                fileStatusDisplay.classList.add('file-status-original');
+            } else if (status === 'modificato') {
+                fileStatusDisplay.textContent = 'modificato';
+                fileStatusDisplay.classList.add('file-status-modified');
+            } else if (status === 'salvato') {
+                fileStatusDisplay.textContent = 'salvato';
+                fileStatusDisplay.classList.add('file-status-saved');
+            }
+        }
+
+        function checkContentStatus() {
+            if (editor.value === originalContent) {
+                setFileStatus('originale');
+            } else {
+                setFileStatus('modificato');
+            }
+        }
+
+        // --- Undo / Redo ---
         let historyStack = [''];
         let historyIndex = 0;
         let isUndoRedoAction = false;
@@ -278,6 +360,7 @@
                 historyStack.push(currentText);
                 historyIndex = historyStack.length - 1;
             }
+            checkContentStatus();
         }
 
         document.getElementById('undoBtn').addEventListener('click', () => {
@@ -286,6 +369,7 @@
                 historyIndex--;
                 editor.value = historyStack[historyIndex];
                 updateEditor();
+                checkContentStatus();
                 isUndoRedoAction = false;
             }
         });
@@ -296,6 +380,7 @@
                 historyIndex++;
                 editor.value = historyStack[historyIndex];
                 updateEditor();
+                checkContentStatus();
                 isUndoRedoAction = false;
             }
         });
@@ -352,23 +437,75 @@
             alert(`Statistiche Testo:\n\n• Caratteri totali: ${charCount}\n• Parole totali: ${wordCount}`);
         });
 
-        // --- Aggiornamento Editor e Righe ---
+        // --- Sincronizzazione ed Editor ---
         function updateEditor() {
-            const lines = editor.value.split('\n').length;
-            let numbers = '';
-            for (let i = 1; i <= lines; i++) {
-                numbers += i + '\n';
+            let text = editor.value;
+            if (text.endsWith("\n")) {
+                text += " ";
             }
-            lineNumbers.textContent = numbers;
+            highlightingContent.textContent = text;
+            Prism.highlightElement(highlightingContent);
+
+            const font = "15px Consolas, Monaco, 'Courier New', monospace";
+            const canvas = updateEditor.canvas || (updateEditor.canvas = document.createElement("canvas"));
+            const context = canvas.getContext("2d");
+            context.font = font;
+
+            const textareaWidth = editor.clientWidth - 24;
+            const rawLines = editor.value.split('\n');
+            let lineNumHTML = '';
+
+            if (textareaWidth > 0) {
+                rawLines.forEach((lineText, index) => {
+                    lineNumHTML += (index + 1) + '\n';
+                    
+                    let words = lineText.split(' ');
+                    let currentLine = '';
+                    let wrappedLines = 0;
+
+                    for (let n = 0; n < words.length; n++) {
+                        let testLine = currentLine + words[n] + ' ';
+                        let metrics = context.measureText(testLine);
+                        if (metrics.width > textareaWidth && n > 0) {
+                            wrappedLines++;
+                            currentLine = words[n] + ' ';
+                        } else {
+                            currentLine = testLine;
+                        }
+                    }
+                    
+                    for (let w = 0; w < wrappedLines; w++) {
+                        lineNumHTML += '\n';
+                    }
+                });
+            } else {
+                lineNumHTML = rawLines.map((_, i) => i + 1).join('\n');
+            }
+
+            lineNumbers.textContent = lineNumHTML;
             performSearch();
             syncScroll();
         }
 
         function syncScroll() {
+            highlighting.scrollTop = editor.scrollTop;
+            highlighting.scrollLeft = editor.scrollLeft;
             lineNumbers.scrollTop = editor.scrollTop;
         }
 
-        // --- Ricerca (Senza perdita di Focus) ---
+        function setLanguage(fileName) {
+            const ext = fileName ? fileName.split('.').pop().toLowerCase() : '';
+            highlightingContent.className = '';
+            if (ext === 'html' || ext === 'htm' || ext === 'asp') {
+                highlightingContent.classList.add('language-markup');
+            } else if (ext === 'js') {
+                highlightingContent.classList.add('language-javascript');
+            } else {
+                highlightingContent.classList.add('language-plaintext');
+            }
+        }
+
+        // --- Ricerca e Scroll Automatico ---
         let searchMatches = [];
         let currentMatchIndex = -1;
 
@@ -400,39 +537,50 @@
             }
         }
 
-        function highlightMatch(index) {
+        function scrollToAndHighlightMatch(index) {
             if (index >= 0 && index < searchMatches.length) {
                 const match = searchMatches[index];
                 editor.setSelectionRange(match.index, match.index + match.length);
                 searchCount.textContent = `${index + 1}/${searchMatches.length}`;
+
+                // Calcolo riga e scorrimento visivo automatico
+                const textBeforeMatch = editor.value.substring(0, match.index);
+                const lineNumber = textBeforeMatch.split('\n').length;
+                const lineHeight = 22.5; // 15px * 1.5 line-height
+                const targetScrollTop = (lineNumber - 1) * lineHeight - (editor.clientHeight / 2);
+                
+                editor.scrollTop = Math.max(0, targetScrollTop);
+                syncScroll();
             }
         }
 
         searchInput.addEventListener('input', () => {
             currentMatchIndex = 0;
             performSearch();
-            highlightMatch(currentMatchIndex);
+            scrollToAndHighlightMatch(currentMatchIndex);
         });
 
         nextSearch.addEventListener('click', () => {
             if (searchMatches.length > 0) {
                 currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length;
-                highlightMatch(currentMatchIndex);
+                scrollToAndHighlightMatch(currentMatchIndex);
             }
         });
 
         prevSearch.addEventListener('click', () => {
             if (searchMatches.length > 0) {
                 currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
-                highlightMatch(currentMatchIndex);
+                scrollToAndHighlightMatch(currentMatchIndex);
             }
         });
 
         let debounceTimer;
         editor.addEventListener('input', () => {
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(saveState, 300);
-            updateEditor();
+            debounceTimer = setTimeout(() => {
+                saveState();
+                updateEditor();
+            }, 100);
         });
 
         editor.addEventListener('scroll', syncScroll);
@@ -449,9 +597,15 @@
                     }]
                 });
                 const file = await fileHandle.getFile();
-                editor.value = await file.text();
+                fileNameDisplay.textContent = file.name;
+                setLanguage(file.name);
+                
+                originalContent = await file.text();
+                editor.value = originalContent;
+                
                 historyStack = [editor.value];
                 historyIndex = 0;
+                setFileStatus('originale');
                 updateEditor();
             } catch (err) {
                 console.log('Apertura annullata', err);
@@ -473,7 +627,12 @@
                 const writable = await fileHandle.createWritable();
                 await writable.write(editor.value);
                 await writable.close();
-                alert('File salvato con successo!');
+                
+                originalContent = editor.value;
+                if (fileHandle.name) {
+                    fileNameDisplay.textContent = fileHandle.name;
+                }
+                setFileStatus('salvato');
             } catch (err) {
                 console.log('Salvataggio annullato', err);
             }
