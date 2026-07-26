@@ -6,8 +6,10 @@
     <title>Editor DM8</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121212">
+    <!-- Componenti Prism aggiornati per supportare anche il CSS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-aspnet.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
@@ -107,7 +109,7 @@
             font-size: 13px;
             cursor: pointer;
         }
-        .menu-item:active {
+        .menu-item:hover {
             background-color: #334155;
         }
         .menu-divider {
@@ -161,10 +163,13 @@
             align-items: center;
             padding: 2px 6px;
             font-size: 11px;
-            color: #888888;
+        }
+        #fileNameDisplay {
+            color: #ffffff; /* Nome del file bianco */
+            font-weight: bold;
         }
         .file-status-original {
-            color: #ffffff;
+            color: #94a3b8;
             font-weight: bold;
         }
         .file-status-modified {
@@ -185,8 +190,8 @@
             overflow: hidden;
         }
         .line-numbers {
-            width: 36px;
-            padding: 12px 4px;
+            width: 44px; /* Leggermente allargato per comodità */
+            padding: 12px 6px;
             background-color: #f0f0f0;
             color: #888888;
             font-family: Consolas, Monaco, "Courier New", monospace !important;
@@ -209,7 +214,7 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
+            min-width: 100%;
             height: 100%;
             padding: 12px !important;
             margin: 0 !important;
@@ -217,13 +222,24 @@
             font-family: Consolas, Monaco, "Courier New", monospace !important;
             font-size: 15px !important;
             line-height: 1.5 !important;
-            white-space: pre-wrap !important;
-            word-wrap: break-word !important;
-            word-break: break-word !important;
             box-sizing: border-box !important;
             tab-size: 4;
             letter-spacing: 0px;
         }
+        
+        /* Gestione 'Righe a capo' (Word Wrap) */
+        .wrap-enabled {
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
+            word-break: break-word !important;
+        }
+        .wrap-disabled {
+            white-space: pre !important;
+            word-wrap: normal !important;
+            word-break: normal !important;
+            overflow-wrap: normal !important;
+        }
+
         textarea {
             z-index: 2;
             color: transparent !important;
@@ -233,7 +249,6 @@
             outline: none;
             -webkit-overflow-scrolling: touch;
         }
-        /* Fix per la selezione del testo di ricerca e della selezione manuale */
         textarea::selection {
             background-color: rgba(14, 165, 233, 0.4);
             color: transparent;
@@ -242,7 +257,7 @@
             z-index: 1;
             background: #ffffff !important;
             pointer-events: none;
-            overflow: hidden;
+            overflow: visible; /* Modificato per scroll orizzontale */
         }
         code {
             font-family: Consolas, Monaco, "Courier New", monospace !important;
@@ -251,9 +266,6 @@
             padding: 0 !important;
             background: transparent !important;
             color: #000000;
-            white-space: pre-wrap !important;
-            word-wrap: break-word !important;
-            word-break: break-word !important;
         }
     </style>
 </head>
@@ -280,6 +292,16 @@
                         <span>Maiuscola dopo punto</span>
                     </div>
                     <div class="menu-divider"></div>
+                    <!-- Nuove impostazioni -->
+                    <div class="menu-item" id="btnToggleWrap">
+                        <span>Righe a capo</span>
+                        <span id="wrapCheck">✓</span>
+                    </div>
+                    <div class="menu-item" id="btnToggleLines">
+                        <span>Numeri riga</span>
+                        <span id="linesCheck">✓</span>
+                    </div>
+                    <div class="menu-divider"></div>
                     <div class="menu-item" id="btnCharCount">
                         <span>Conta caratteri</span>
                     </div>
@@ -302,15 +324,15 @@
 
         <div class="file-info-bar">
             <span id="fileNameDisplay">Senza titolo</span>
-            <span id="fileStatusDisplay" class="file-status-original">originale</span>
+            <span id="fileStatusDisplay" class="file-status-original">non modificato</span>
         </div>
     </header>
 
     <div class="editor-container">
         <div id="lineNumbers" class="line-numbers">1</div>
         <div class="work-area">
-            <pre id="highlighting"><code id="highlighting-content" class="language-plaintext"></code></pre>
-            <textarea id="editor" placeholder="Scrivi qui o apri un file..." spellcheck="false"></textarea>
+            <pre id="highlighting" class="wrap-enabled"><code id="highlighting-content" class="language-plaintext wrap-enabled"></code></pre>
+            <textarea id="editor" class="wrap-enabled" placeholder="Scrivi qui o apri un file..." spellcheck="false"></textarea>
         </div>
     </div>
 
@@ -337,11 +359,51 @@
         const replaceInput = document.getElementById('replaceInput');
         const btnReplace = document.getElementById('btnReplace');
 
+        // Impostazioni
+        let isWrapEnabled = true;
+        let isLinesEnabled = true;
+
+        // --- Gestione Menu e Impostazioni ---
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('show');
+        });
+
+        document.addEventListener('click', () => {
+            dropdownMenu.classList.remove('show');
+        });
+
+        document.getElementById('btnToggleWrap').addEventListener('click', (e) => {
+            e.stopPropagation();
+            isWrapEnabled = !isWrapEnabled;
+            document.getElementById('wrapCheck').textContent = isWrapEnabled ? '✓' : '';
+            
+            const elements = [editor, highlighting, highlightingContent];
+            if (isWrapEnabled) {
+                elements.forEach(el => {
+                    el.classList.remove('wrap-disabled');
+                    el.classList.add('wrap-enabled');
+                });
+            } else {
+                elements.forEach(el => {
+                    el.classList.remove('wrap-enabled');
+                    el.classList.add('wrap-disabled');
+                });
+            }
+        });
+
+        document.getElementById('btnToggleLines').addEventListener('click', (e) => {
+            e.stopPropagation();
+            isLinesEnabled = !isLinesEnabled;
+            document.getElementById('linesCheck').textContent = isLinesEnabled ? '✓' : '';
+            lineNumbers.style.display = isLinesEnabled ? 'block' : 'none';
+        });
+
         // --- Gestione Stato File ---
         function setFileStatus(status) {
             fileStatusDisplay.className = '';
-            if (status === 'originale') {
-                fileStatusDisplay.textContent = 'originale';
+            if (status === 'non modificato') {
+                fileStatusDisplay.textContent = 'non modificato';
                 fileStatusDisplay.classList.add('file-status-original');
             } else if (status === 'modificato') {
                 fileStatusDisplay.textContent = 'modificato';
@@ -354,7 +416,7 @@
 
         function checkContentStatus() {
             if (editor.value === originalContent) {
-                setFileStatus('originale');
+                setFileStatus('non modificato');
             } else {
                 setFileStatus('modificato');
             }
@@ -414,16 +476,6 @@
             updateEditor();
         });
 
-        // --- Gestione Menu ---
-        menuBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dropdownMenu.classList.toggle('show');
-        });
-
-        document.addEventListener('click', () => {
-            dropdownMenu.classList.remove('show');
-        });
-
         document.getElementById('btnUpper').addEventListener('click', () => {
             editor.value = editor.value.toUpperCase();
             saveState();
@@ -459,9 +511,9 @@
             highlightingContent.textContent = text;
             Prism.highlightElement(highlightingContent);
 
-            // Ottimizzazione estrema: Rimosso il canvas che bloccava la textarea.
             const rawLines = editor.value.split('\n');
-            lineNumbers.textContent = rawLines.map((_, i) => i + 1).join('\n');
+            // Aggiunto spazio vuoto formattato per distanziare i numeri di riga
+            lineNumbers.textContent = rawLines.map((_, i) => (i + 1) + ' ').join('\n');
             
             performSearch();
             syncScroll();
@@ -475,11 +527,15 @@
 
         function setLanguage(fileName) {
             const ext = fileName ? fileName.split('.').pop().toLowerCase() : '';
-            highlightingContent.className = '';
+            highlightingContent.className = 'wrap-enabled';
+            if (!isWrapEnabled) highlightingContent.classList.replace('wrap-enabled', 'wrap-disabled');
+            
             if (ext === 'html' || ext === 'htm' || ext === 'asp') {
                 highlightingContent.classList.add('language-markup');
             } else if (ext === 'js') {
                 highlightingContent.classList.add('language-javascript');
+            } else if (ext === 'css') {
+                highlightingContent.classList.add('language-css');
             } else {
                 highlightingContent.classList.add('language-plaintext');
             }
@@ -520,18 +576,12 @@
         function scrollToAndHighlightMatch(index) {
             if (index >= 0 && index < searchMatches.length) {
                 const match = searchMatches[index];
+                
+                // Forza il focus per lo scroll automatico del browser verso la selezione
+                editor.focus();
                 editor.setSelectionRange(match.index, match.index + match.length);
                 searchCount.textContent = `${index + 1}/${searchMatches.length}`;
                 
-                // Forza il focus per rendere visibile l'evidenziazione CSS
-                // editor.focus();
-
-                const textBeforeMatch = editor.value.substring(0, match.index);
-                const lineNumber = textBeforeMatch.split('\n').length;
-                const lineHeight = 22.5; 
-                const targetScrollTop = (lineNumber - 1) * lineHeight - (editor.clientHeight / 2);
-                
-                editor.scrollTop = Math.max(0, targetScrollTop);
                 syncScroll();
             }
         }
@@ -562,7 +612,7 @@
             debounceTimer = setTimeout(() => {
                 saveState();
                 updateEditor();
-            }, 50); // Timer ridotto per maggiore reattività
+            }, 50);
         });
 
         editor.addEventListener('scroll', syncScroll);
@@ -584,7 +634,7 @@
             historyIndex = 0;
             fileNameDisplay.textContent = 'Senza titolo';
             setLanguage('');
-            setFileStatus('originale');
+            setFileStatus('non modificato');
             updateEditor();
         });
 
@@ -595,7 +645,7 @@
                     types: [{
                         description: 'File di testo e codice',
                         accept: {
-                            'text/plain': ['.txt', '.html', '.htm', '.js', '.asp']
+                            'text/plain': ['.txt', '.html', '.htm', '.js', '.css', '.asp']
                         }
                     }]
                 });
@@ -608,7 +658,7 @@
                 
                 historyStack = [editor.value];
                 historyIndex = 0;
-                setFileStatus('originale');
+                setFileStatus('non modificato');
                 updateEditor();
             } catch (err) {
                 console.log('Apertura annullata', err);
@@ -619,11 +669,15 @@
         document.getElementById('saveBtn').addEventListener('click', async () => {
             try {
                 if (!fileHandle) {
+                    let defaultName = fileNameDisplay.textContent;
+                    if (defaultName === 'Senza titolo') defaultName = 'Senza_titolo.txt';
+                    
                     fileHandle = await window.showSaveFilePicker({
+                        suggestedName: defaultName,
                         types: [{
                             description: 'File di testo e codice',
                             accept: {
-                                'text/plain': ['.txt', '.html', '.htm', '.js', '.asp']
+                                'text/plain': ['.txt', '.html', '.htm', '.js', '.css', '.asp']
                             }
                         }]
                     });
@@ -647,10 +701,11 @@
         document.getElementById('saveAsBtn').addEventListener('click', async () => {
             try {
                 const newHandle = await window.showSaveFilePicker({
+                    suggestedName: 'EditorDM8.txt',
                     types: [{
                         description: 'File di testo e codice',
                         accept: {
-                            'text/plain': ['.txt', '.html', '.htm', '.js', '.asp']
+                            'text/plain': ['.txt', '.html', '.htm', '.js', '.css', '.asp']
                         }
                     }]
                 });
