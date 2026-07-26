@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor TXT DM8</title>
+  <meta name="theme-color" content="#121212">
+  
+  <!-- Manifest PWA Integrato -->
+  <link rel="manifest" href='data:application/json,{"name":"Editor TXT","short_name":"TXT Editor","start_url":".","display":"standalone","background_color":"#121212","theme_color":"#121212"}'>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, Roboto, sans-serif;
+      background-color: white;
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    /* Toolbar Superiore */
+    .toolbar {
+      background-color: #1e1e1e;
+      padding: 10px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      border-bottom: 1px solid #333;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:active { opacity: 0.8; }
+    button.save-btn { background-color: #28a745; }
+
+    /* Barra di Ricerca */
+    .search-box {
+      display: flex;
+      gap: 4px;
+      margin-left: auto;
+      align-items: center;
+    }
+
+    input[type="text"] {
+      background-color: #2a2a2a;
+      border: 1px solid #444;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 14px;
+      outline: none;
+      width: 140px;
+    }
+
+    .file-info {
+      font-size: 12px;
+      color: #888;
+      width: 100%;
+      margin-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Area Testo */
+    textarea {
+      flex: 1;
+      background-color: white;
+      color: black;
+      border: none;
+      padding: 15px;
+      font-family: 'Verdana';
+      font-size: 17px;
+      line-height: 1.4;
+      resize: none;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <button onclick="openFile()">ðŸ“‚ Apri</button>
+    <button class="save-btn" onclick="saveFile()">ðŸ’¾ Salva</button>
+    
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Cerca...">
+      <button onclick="findText()">ðŸ”</button>
+    </div>
+
+    <div class="file-info" id="fileInfo">Nessun file aperto</div>
+  </div>
+
+  <textarea id="editor" placeholder="Scrivi qui o apri un file .txt..."></textarea>
+
+  <!-- Input nascosto di fallback se l'API nativa FileSystem non Ã¨ attiva -->
+  <input type="file" id="fallbackInput" accept=".txt,text/plain" style="display:none" onchange="readFallbackFile(this)">
+
+  <script>
+    let fileHandle = null;
+    const editor = document.getElementById('editor');
+    const fileInfo = document.getElementById('fileInfo');
+
+    // 1. Apri il file .txt
+    async function openFile() {
+      if ('showOpenFilePicker' in window) {
+        try {
+          [fileHandle] = await window.showOpenFilePicker({
+            types: [{ description: 'File di testo', accept: { 'text/plain': ['.txt'] } }]
+          });
+          const file = await fileHandle.getFile();
+          editor.value = await file.text();
+          fileInfo.textContent = `File aperto: ${file.name}`;
+        } catch (err) {
+          if (err.name !== 'AbortError') alert("Errore nell'apertura del file");
+        }
+      } else {
+        // Fallback per browser vecchi o limitati
+        document.getElementById('fallbackInput').click();
+      }
+    }
+
+    // Fallback Lettura
+    function readFallbackFile(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        editor.value = e.target.result;
+        fileInfo.textContent = `File aperto: ${file.name} (ModalitÃ  Lettura)`;
+        fileHandle = null; // Il salvataggio diretto non Ã¨ gestibile via fallback
+      };
+      reader.readAsText(file);
+    }
+
+    // 2. Salva il file .txt
+    async function saveFile() {
+      if (fileHandle) {
+        try {
+          const writable = await fileHandle.createWritable();
+          await writable.write(editor.value);
+          await writable.close();
+          alert("File salvato con successo!");
+        } catch (err) {
+          alert("Impossibile salvare direttamente. Scarico una copia...");
+          downloadCopy();
+        }
+      } else {
+        downloadCopy();
+      }
+    }
+
+    // Salvataggio tramite download se aperto in modalitÃ  fallback
+    function downloadCopy() {
+      const blob = new Blob([editor.value], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'documento.txt';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    // 3. Ricerca di testo avanzata
+    function findText() {
+      const query = document.getElementById('searchInput').value;
+      if (!query) return;
+
+      const content = editor.value;
+      const startIndex = content.toLowerCase().indexOf(query.toLowerCase(), editor.selectionEnd);
+      
+      if (startIndex !== -1) {
+        editor.focus();
+        editor.setSelectionRange(startIndex, startIndex + query.length);
+      } else {
+        // Se non trova nulla dopo il cursore, ricomincia dall'inizio
+        const firstIndex = content.toLowerCase().indexOf(query.toLowerCase());
+        if (firstIndex !== -1) {
+          editor.focus();
+          editor.setSelectionRange(firstIndex, firstIndex + query.length);
+        } else {
+          alert("Nessun risultato trovato.");
+        }
+      }
+    }
+
+    // 4. Registrazione Service Worker Offline integrata (PWA)
+    if ('serviceWorker' in navigator) {
+      const swCode = `
+        self.addEventListener('fetch', (e) => {
+          e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+        });
+      `;
+      const blob = new Blob([swCode], { type: 'text/javascript' });
+      navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+    }
+  </script>
+</body>
+</html>
