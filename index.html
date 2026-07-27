@@ -202,6 +202,7 @@
             border-right: 1px solid #e0e0e0;
             flex-shrink: 0;
             overflow: hidden;
+            white-space: pre; /* RISOLVE il problema dei numeri in orizzontale */
         }
         .work-area {
             position: relative;
@@ -215,7 +216,7 @@
             position: absolute;
             top: 0;
             left: 0;
-            min-width: 100%;
+            width: 100%; /* Forzare larghezza a 100% permette al pre di limitarsi ed attivare lo scrollLeft */
             height: 100%;
             padding: 12px !important;
             margin: 0 !important;
@@ -400,7 +401,6 @@
                     el.classList.remove('wrap-disabled');
                     el.classList.add('wrap-enabled');
                 });
-                highlighting.style.width = '100%';
             } else {
                 elements.forEach(el => {
                     el.classList.remove('wrap-enabled');
@@ -539,12 +539,9 @@
             highlightingContent.textContent = text;
             Prism.highlightElement(highlightingContent);
 
-            // Sincronizza la larghezza del livello di evidenziazione con il contenuto reale della textarea (fondamentale per scroll orizzontale)
-            if (!isWrapEnabled) {
-                highlighting.style.width = editor.scrollWidth + 'px';
-            } else {
-                highlighting.style.width = '100%';
-            }
+            // Mantenendo width: 100% fisso, consentiamo al 'pre' di calcolare correttamente l'overflow interno 
+            // e scorrere orizzontalmente all'unisono con la textarea tramite syncScroll
+            highlighting.style.width = '100%';
 
             const rawLines = editor.value.split('\n');
             lineNumbers.textContent = rawLines.map((_, i) => (i + 1) + ' ').join('\n');
