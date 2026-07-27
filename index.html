@@ -131,6 +131,7 @@
             display: flex;
             gap: 6px;
             align-items: center;
+            flex-wrap: wrap;
         }
         .replace-bar {
             display: none;
@@ -138,8 +139,7 @@
         .replace-bar.show {
             display: flex;
         }
-        .search-input {
-            flex: 1;
+        .search-input, .select-mode {
             padding: 7px 10px;
             background-color: #1e293b;
             color: #ffffff;
@@ -148,7 +148,14 @@
             font-size: 13px;
             outline: none;
         }
-        .search-input:focus {
+        .search-input {
+            flex: 1;
+            min-width: 120px;
+        }
+        .select-mode {
+            cursor: pointer;
+        }
+        .search-input:focus, .select-mode:focus {
             border-color: #0ea5e9;
         }
         .btn-search {
@@ -316,6 +323,33 @@
             outline: none;
         }
         .modal-footer { display: flex; justify-content: flex-end; gap: 10px; }
+
+        /* --- MESSAGGIO IN SOVRAIMPRESSIONE (TOAST) --- */
+        .toast-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.95);
+            color: #ffffff;
+            padding: 12px 22px;
+            border-radius: 8px;
+            border: 1px solid #0ea5e9;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 2000;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            text-align: center;
+        }
+        .toast-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
     </style>
 </head>
 <body>
@@ -368,6 +402,10 @@
 
         <div id="replaceBar" class="replace-bar">
             <input type="text" id="replaceInput" class="search-input" placeholder="Sostituisci con...">
+            <select id="replaceModeSelect" class="select-mode">
+                <option value="all">Tutte le ricorrenze</option>
+                <option value="one">Una alla volta</option>
+            </select>
             <button id="btnReplace" class="btn-search btn-replace">Sostituisci</button>
         </div>
     </footer>
@@ -393,6 +431,9 @@
         </div>
     </div>
 
+    <!-- MESSAGGIO IN SOVRAIMPRESSIONE (TOAST) -->
+    <div id="toastOverlay" class="toast-overlay">Modalità selezionata</div>
+
     <script>
         let fileHandle;
         let originalContent = '';
@@ -414,18 +455,36 @@
         const toggleReplace = document.getElementById('toggleReplace');
         const replaceBar = document.getElementById('replaceBar');
         const replaceInput = document.getElementById('replaceInput');
+        const replaceModeSelect = document.getElementById('replaceModeSelect');
         const btnReplace = document.getElementById('btnReplace');
 
-        // Modale di Salvataggio
+        // Modale di Salvataggio & Toast
         const saveModal = document.getElementById('saveModal');
         const modalFileName = document.getElementById('modalFileName');
         const modalFileExt = document.getElementById('modalFileExt');
         const modalCancelBtn = document.getElementById('modalCancelBtn');
         const modalConfirmBtn = document.getElementById('modalConfirmBtn');
-        
+        const toastOverlay = document.getElementById('toastOverlay');
+        let toastTimeout;
+
         // Impostazioni
         let isWrapEnabled = true;
         let isLinesEnabled = true;
+
+        // --- Funzione Toast (Messaggio temporaneo 1 secondo) ---
+        function showToast(message) {
+            toastOverlay.textContent = message;
+            toastOverlay.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toastOverlay.classList.remove('show');
+            }, 1000);
+        }
+
+        replaceModeSelect.addEventListener('change', () => {
+            const selectedText = replaceModeSelect.options[replaceModeSelect.selectedIndex].text;
+            showToast(`Modalità: ${selectedText}`);
+        });
 
         // --- Gestione Menu e Impostazioni ---
         menuBtn.addEventListener('click', (e) => {
@@ -556,10 +615,38 @@
             const query = searchInput.value;
             const replaceText = replaceInput.value;
             if (!query) return;
-            const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-            editor.value = editor.value.replace(regex, replaceText);
-            saveState();
-            updateEditor();
+
+            const mode = replaceModeSelect.value;
+
+            if (mode === 'all') {
+                // Sostituisce tutte le occorrenze
+                const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                editor.value = editor.value.replace(regex, replaceText);
+                saveState();
+                updateEditor();
+            } else if (mode === 'one') {
+                // Sostituisce una sola occorrenza (quella attualmente evidenziata/selezionata)
+                if (searchMatches.length === 0 || currentMatchIndex < 0) {
+                    performSearch();
+                }
+
+                if (searchMatches.length > 0 && currentMatchIndex >= 0 && currentMatchIndex < searchMatches.length) {
+                    const match = searchMatches[currentMatchIndex];
+                    const fullText = editor.value;
+                    editor.value = fullText.slice(0, match.index) + replaceText + fullText.slice(match.index + match.length);
+                    
+                    saveState();
+                    updateEditor();
+
+                    // Riposiziona il cursore/evidenziazione sul prossimo elemento
+                    if (searchMatches.length > 0) {
+                        if (currentMatchIndex >= searchMatches.length) {
+                            currentMatchIndex = 0;
+                        }
+                        scrollToAndHighlightMatch(currentMatchIndex, true);
+                    }
+                }
+            }
         });
 
         document.getElementById('btnUpper').addEventListener('click', () => { editor.value = editor.value.toUpperCase(); saveState(); updateEditor(); });
@@ -689,12 +776,11 @@
                     const name = currentName.substring(0, lastDotIndex);
                     modalFileName.value = name;
                     
-                    // Cerca di selezionare l'estensione nel menu a tendina se esiste
                     const optionExists = Array.from(modalFileExt.options).some(opt => opt.value === ext);
                     if (optionExists) {
                         modalFileExt.value = ext;
                     } else {
-                        modalFileExt.value = '.txt'; // fallback
+                        modalFileExt.value = '.txt';
                     }
                 } else {
                     modalFileName.value = currentName;
@@ -744,8 +830,6 @@
             if (fileStatusDisplay.textContent === 'modificato') {
                 const confirmSave = confirm("Il documento attuale è stato modificato. Vuoi salvarlo prima di creare un nuovo file?");
                 if (confirmSave) {
-                    // Non possiamo usare await in modo pulito sul bottone di salvataggio se dipende da un click manuale.
-                    // Informiamo l'utente di salvare prima.
                     alert("Per favore, salva il documento prima di procedere.");
                     return;
                 }
@@ -791,10 +875,8 @@
         // SALVA FILE
         document.getElementById('saveBtn').addEventListener('click', async () => {
             if (!fileHandle) {
-                // Se è un nuovo documento "Senza titolo", richiamo la modale come in SCN
                 openSaveModal();
             } else {
-                // Se il file è già stato salvato o aperto, chiedo conferma con Alert standard
                 const confirmSave = confirm(`Vuoi sovrascrivere le modifiche nel file: ${fileHandle.name}?`);
                 if (confirmSave) {
                     try {
