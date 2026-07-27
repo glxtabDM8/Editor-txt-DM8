@@ -40,21 +40,20 @@
             flex-direction: column;
             gap: 6px;
             background-color: #121212;
-            padding-bottom: 6px;
+            padding-bottom: 8px;
         }
 
         .top-bar {
             display: flex;
-            gap: 4px;
+            gap: 6px;
             align-items: center;
-            flex-wrap: nowrap;
-            overflow-x: auto;
+            flex-wrap: wrap;
         }
 
         .btn-action {
             flex: 1;
             padding: 8px 4px;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
             background-color: #0ea5e9;
             color: #ffffff;
@@ -65,15 +64,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            min-width: 42px;
+            min-width: 10px;
         }
         .btn-action:active { background-color: #0284c7; }
-        .btn-search-toggle { background-color: #0284c7; }
         
         .menu-wrapper { position: relative; }
         .btn-menu {
-            width: 34px;
-            height: 32px;
+            width: 36px;
+            height: 34px;
             background-color: #334155;
             color: #ffffff;
             border: none;
@@ -87,7 +85,7 @@
         .dropdown-menu {
             display: none;
             position: absolute;
-            top: 38px;
+            top: 40px;
             right: 0;
             width: 230px;
             background-color: #1e293b;
@@ -114,55 +112,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 2px 4px;
+            padding: 2px 6px;
             font-size: 11px;
         }
         #fileNameDisplay { color: #ffffff; font-weight: bold; }
         .file-status-original { color: #94a3b8; font-weight: bold; }
         .file-status-modified { color: #ef4444; font-weight: bold; }
         .file-status-saved { color: #22c55e; font-weight: bold; }
-
-        /* --- PANNELLO RICERCA POSIZIONATO IN ALTO --- */
-        .search-panel {
-            display: none;
-            flex-direction: column;
-            gap: 6px;
-            background: #1e293b;
-            border: 1px solid #475569;
-            border-radius: 8px;
-            padding: 8px;
-            margin-bottom: 6px;
-            flex-shrink: 0;
-        }
-        .search-panel.show { display: flex; }
-
-        .search-bar, .replace-bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-        .replace-bar { display: none; }
-        .replace-bar.show { display: flex; }
-        
-        .search-input, .select-mode {
-            padding: 6px 8px;
-            background-color: #0f172a;
-            color: #ffffff;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            font-size: 13px;
-            outline: none;
-        }
-        .search-input { flex: 1; min-width: 100px; }
-        .select-mode { cursor: pointer; }
-        .search-input:focus, .select-mode:focus { border-color: #0ea5e9; }
-        .btn-search {
-            padding: 6px 10px;
-            background-color: #334155;
-            color: #ffffff;
-            border: none;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-        .btn-replace { background-color: #0ea5e9; font-weight: 600; }
-        .search-count { color: #f1f5f9; font-size: 11px; min-width: 38px; text-align: center; }
 
         .editor-container {
             position: relative;
@@ -176,7 +132,7 @@
         }
         .line-numbers {
             width: 44px;
-            padding: 12px 6px;
+            padding: 12px 6px 90px 6px; /* Padding bottom maggiorato per non coprire i numeri con la barra */
             background-color: #f0f0f0;
             color: #888888;
             font-family: var(--editor-font) !important;
@@ -204,7 +160,7 @@
             left: 0;
             width: 100%; 
             height: 100%;
-            padding: 12px !important;
+            padding: 12px 12px 90px 12px !important; /* Padding bottom per poter scorrere sotto la barra flottante */
             margin: 0 !important;
             border: none !important;
             font-family: var(--editor-font) !important;
@@ -248,6 +204,54 @@
             -webkit-overflow-scrolling: touch;
         }
         textarea::selection { background-color: rgba(14, 165, 233, 0.4); color: transparent; }
+
+        /* --- BARRA FLOTTANTE RICERCA E SOSTITUZIONE --- */
+        .search-panel {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 16px);
+            max-width: 600px;
+            background: rgba(30, 41, 59, 0.85); /* Sfondo semi-trasparente scuro */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid #475569;
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 50;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+
+        .search-bar, .replace-bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .replace-bar { display: none; }
+        .replace-bar.show { display: flex; }
+        .search-input, .select-mode {
+            padding: 7px 10px;
+            background-color: #1e293b;
+            color: #ffffff;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+        }
+        .search-input { flex: 1; min-width: 120px; }
+        .select-mode { cursor: pointer; }
+        .search-input:focus, .select-mode:focus { border-color: #0ea5e9; }
+        .btn-search {
+            padding: 7px 10px;
+            background-color: #334155;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .btn-replace { background-color: #0ea5e9; font-weight: 600; }
+        .search-count { color: #f1f5f9; font-size: 11px; min-width: 38px; text-align: center; }
 
         .modal-overlay {
             display: none;
@@ -300,7 +304,6 @@
             <button id="openBtn" class="btn-action">Apri</button>
             <button id="saveBtn" class="btn-action">Salva</button>
             <button id="saveAsBtn" class="btn-action">SCN</button>
-            <button id="btnToggleSearch" class="btn-action btn-search-toggle">Cerca</button>
             <button id="undoBtn" class="btn-action">Undo</button>
             <button id="redoBtn" class="btn-action">Redo</button>
             <div class="menu-wrapper">
@@ -325,8 +328,16 @@
             <span id="fileNameDisplay">Senza titolo.txt</span>
             <span id="fileStatusDisplay" class="file-status-original">non modificato</span>
         </div>
+    </header>
 
-        <!-- PANNELLO RICERCA E SOSTITUZIONE IN ALTO (NON COPERTO DALLA TASTIERA) -->
+    <div class="editor-container">
+        <div id="lineNumbers" class="line-numbers">1</div>
+        <div class="work-area">
+            <pre id="highlighting" class="text-layer wrap-enabled"><code id="highlighting-content" class="language-plaintext wrap-enabled"></code></pre>
+            <textarea id="editor" class="text-layer wrap-enabled" placeholder="Scrivi qui o apri un file..." spellcheck="false"></textarea>
+        </div>
+
+        <!-- PANNELLO RICERCA FLOTTANTE -->
         <div class="search-panel" id="searchPanel">
             <div class="search-bar">
                 <input type="text" id="searchInput" class="search-input" placeholder="Cerca...">
@@ -337,20 +348,12 @@
             </div>
             <div id="replaceBar" class="replace-bar">
                 <input type="text" id="replaceInput" class="search-input" placeholder="Sostituisci con...">
-                <select id="replaceModeSelect" class="select-mode">
-                    <option value="all">Tutte</option>
-                    <option value="one">Una</option>
+                <select id="replaceModeSelect" class="select-mode" style="padding: 7px;">
+                    <option value="all">Tutte le ricorrenze</option>
+                    <option value="one">Una alla volta</option>
                 </select>
                 <button id="btnReplace" class="btn-search btn-replace">Sostituisci</button>
             </div>
-        </div>
-    </header>
-
-    <div class="editor-container">
-        <div id="lineNumbers" class="line-numbers">1</div>
-        <div class="work-area">
-            <pre id="highlighting" class="text-layer wrap-enabled"><code id="highlighting-content" class="language-plaintext wrap-enabled"></code></pre>
-            <textarea id="editor" class="text-layer wrap-enabled" placeholder="Scrivi qui o apri un file..." spellcheck="false"></textarea>
         </div>
     </div>
 
@@ -391,8 +394,6 @@
         const menuBtn = document.getElementById('menuBtn');
         const dropdownMenu = document.getElementById('dropdownMenu');
         
-        const btnToggleSearch = document.getElementById('btnToggleSearch');
-        const searchPanel = document.getElementById('searchPanel');
         const searchInput = document.getElementById('searchInput');
         const prevSearch = document.getElementById('prevSearch');
         const nextSearch = document.getElementById('nextSearch');
@@ -411,15 +412,7 @@
         const toastOverlay = document.getElementById('toastOverlay');
         let toastTimeout;
 
-        // Tasto ON/OFF Barra di Ricerca
-        btnToggleSearch.addEventListener('click', () => {
-            searchPanel.classList.toggle('show');
-            if (searchPanel.classList.contains('show')) {
-                searchInput.focus();
-            }
-        });
-
-        // --- GESTIONE IMPOSTAZIONI ---
+        // --- GESTIONE IMPOSTAZIONI E MEMORIA ---
         const fonts = [
             { name: 'Verdana', value: 'Verdana, sans-serif' },
             { name: 'System Default', value: 'system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif' },
@@ -679,6 +672,7 @@
         nextSearch.addEventListener('click', () => { if (!isWrapEnabled) applyWrapState(true); if (searchMatches.length > 0) { currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length; scrollToAndHighlightMatch(currentMatchIndex, true); }});
         prevSearch.addEventListener('click', () => { if (!isWrapEnabled) applyWrapState(true); if (searchMatches.length > 0) { currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length; scrollToAndHighlightMatch(currentMatchIndex, true); }});
 
+        // Eventi di Scrittura e Incolla
         let debounceTimer;
         editor.addEventListener('input', () => {
             clearTimeout(debounceTimer);
@@ -778,6 +772,7 @@
             } catch (err) { console.log('Apertura annullata', err); }
         });
 
+        // Pulsante SALVA DIRETTO
         document.getElementById('saveBtn').addEventListener('click', async () => {
             if (!fileHandle) {
                 openSaveModal();
