@@ -6,25 +6,21 @@
     <title>Editor DM8</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121212">
-    <!-- Componenti Prism -->
+    <!-- Componenti Prism (Aggiunto Markdown per i file .dm8) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-aspnet.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
     <style>
         :root {
-            /* Variabili dinamiche per il font modificate via JS */
             --editor-font: Verdana, sans-serif;
             --editor-size: 15px;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
             height: 100%;
             background-color: #121212;
@@ -61,6 +57,36 @@
             align-items: center;
             flex-wrap: wrap;
         }
+        
+        /* BARRA FORMATTAZIONE TESTO */
+        .format-bar {
+            display: none; /* Nascosta di default, mostrata solo per txt e dm8 */
+            gap: 6px;
+            align-items: center;
+            background-color: #1e293b;
+            padding: 4px 6px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+        }
+        .format-bar.show { display: flex; }
+        .btn-format {
+            background: none;
+            border: none;
+            color: #e2e8f0;
+            font-size: 14px;
+            font-weight: bold;
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-format:hover, .btn-format:active { background-color: #334155; }
+        .btn-format.italic { font-style: italic; }
+        .btn-format.underline { text-decoration: underline; }
+
         .btn-action {
             flex: 1;
             padding: 8px 4px;
@@ -75,15 +101,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
             min-width: 10px;
         }
-        .btn-action:active {
-            background-color: #0284c7;
-        }
-        .menu-wrapper {
-            position: relative;
-        }
+        .btn-action:active { background-color: #0284c7; }
+        .menu-wrapper { position: relative; }
         .btn-menu {
             width: 36px;
             height: 34px;
@@ -110,9 +131,7 @@
             z-index: 200;
             padding: 6px 0;
         }
-        .dropdown-menu.show {
-            display: block;
-        }
+        .dropdown-menu.show { display: block; }
         .menu-item {
             display: flex;
             align-items: center;
@@ -122,27 +141,12 @@
             font-size: 13px;
             cursor: pointer;
         }
-        .menu-item:hover {
-            background-color: #334155;
-        }
-        .menu-divider {
-            height: 1px;
-            background-color: #334155;
-            margin: 4px 0;
-        }
+        .menu-item:hover { background-color: #334155; }
+        .menu-divider { height: 1px; background-color: #334155; margin: 4px 0; }
         
-        .search-bar, .replace-bar {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .replace-bar {
-            display: none;
-        }
-        .replace-bar.show {
-            display: flex;
-        }
+        .search-bar, .replace-bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .replace-bar { display: none; }
+        .replace-bar.show { display: flex; }
         .search-input, .select-mode {
             padding: 7px 10px;
             background-color: #1e293b;
@@ -152,16 +156,9 @@
             font-size: 13px;
             outline: none;
         }
-        .search-input {
-            flex: 1;
-            min-width: 120px;
-        }
-        .select-mode {
-            cursor: pointer;
-        }
-        .search-input:focus, .select-mode:focus {
-            border-color: #0ea5e9;
-        }
+        .search-input { flex: 1; min-width: 120px; }
+        .select-mode { cursor: pointer; }
+        .search-input:focus, .select-mode:focus { border-color: #0ea5e9; }
         .btn-search {
             padding: 7px 10px;
             background-color: #334155;
@@ -171,16 +168,8 @@
             font-size: 12px;
             cursor: pointer;
         }
-        .btn-replace {
-            background-color: #0ea5e9;
-            font-weight: 600;
-        }
-        .search-count {
-            color: #94a3b8;
-            font-size: 11px;
-            min-width: 38px;
-            text-align: center;
-        }
+        .btn-replace { background-color: #0ea5e9; font-weight: 600; }
+        .search-count { color: #94a3b8; font-size: 11px; min-width: 38px; text-align: center; }
 
         .file-info-bar {
             display: flex;
@@ -189,10 +178,7 @@
             padding: 2px 6px;
             font-size: 11px;
         }
-        #fileNameDisplay {
-            color: #ffffff;
-            font-weight: bold;
-        }
+        #fileNameDisplay { color: #ffffff; font-weight: bold; }
         .file-status-original { color: #94a3b8; font-weight: bold; }
         .file-status-modified { color: #ef4444; font-weight: bold; }
         .file-status-saved { color: #22c55e; font-weight: bold; }
@@ -231,7 +217,6 @@
             display: flex;
         }
         
-        /* Regole applicate in comune per perfetta sovrapposizione */
         .text-layer {
             position: absolute;
             top: 0;
@@ -261,12 +246,7 @@
             overflow-wrap: normal !important;
         }
 
-        pre {
-            z-index: 1;
-            background: transparent !important;
-            pointer-events: none;
-            overflow: hidden !important;
-        }
+        pre { z-index: 1; background: transparent !important; pointer-events: none; overflow: hidden !important; }
         code {
             font-family: var(--editor-font) !important;
             font-size: var(--editor-size) !important;
@@ -286,12 +266,9 @@
             overflow: auto !important;
             -webkit-overflow-scrolling: touch;
         }
-        textarea::selection {
-            background-color: rgba(14, 165, 233, 0.4);
-            color: transparent;
-        }
+        textarea::selection { background-color: rgba(14, 165, 233, 0.4); color: transparent; }
 
-        /* --- STILI MODALE E TOAST --- */
+        /* MODALE E TOAST */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -319,42 +296,20 @@
         .modal-body { display: flex; gap: 8px; }
         .modal-body input { flex: 2; }
         .modal-body select { 
-            flex: 1; 
-            padding: 7px;
-            background-color: #1e293b;
-            color: #ffffff;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            font-size: 13px;
-            outline: none;
+            flex: 1; padding: 7px; background-color: #1e293b; color: #ffffff;
+            border: 1px solid #334155; border-radius: 6px; font-size: 13px; outline: none;
         }
         .modal-footer { display: flex; justify-content: flex-end; gap: 10px; }
 
         .toast-overlay {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(15, 23, 42, 0.95);
-            color: #ffffff;
-            padding: 12px 22px;
-            border-radius: 8px;
-            border: 1px solid #0ea5e9;
-            font-size: 14px;
-            font-weight: 600;
-            z-index: 2000;
-            pointer-events: none;
-            opacity: 0;
-            visibility: hidden;
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.95); color: #ffffff; padding: 12px 22px;
+            border-radius: 8px; border: 1px solid #0ea5e9; font-size: 14px; font-weight: 600;
+            z-index: 2000; pointer-events: none; opacity: 0; visibility: hidden;
             transition: opacity 0.2s ease, visibility 0.2s ease;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-            backdrop-filter: blur(4px);
-            text-align: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6); backdrop-filter: blur(4px); text-align: center;
         }
-        .toast-overlay.show {
-            opacity: 1;
-            visibility: visible;
-        }
+        .toast-overlay.show { opacity: 1; visibility: visible; }
     </style>
 </head>
 <body>
@@ -370,25 +325,30 @@
             <div class="menu-wrapper">
                 <button id="menuBtn" class="btn-menu">⋮</button>
                 <div id="dropdownMenu" class="dropdown-menu">
-                    <!-- Controlli Testo -->
                     <div class="menu-item" id="btnUpper"><span>TUTTO MAIUSCOLO</span></div>
                     <div class="menu-item" id="btnLower"><span>tutto minuscolo</span></div>
                     <div class="menu-item" id="btnSentence"><span>Maiuscola dopo punto</span></div>
                     <div class="menu-divider"></div>
-                    <!-- Nuovi Controlli Font -->
                     <div class="menu-item" id="btnFontFamily"><span>Font: Verdana</span></div>
                     <div class="menu-item" id="btnFontSize"><span>Testo: Medio</span></div>
                     <div class="menu-divider"></div>
-                    <!-- Impostazioni Struttura -->
                     <div class="menu-item" id="btnToggleWrap"><span>Righe a capo</span><span id="wrapCheck">✓</span></div>
                     <div class="menu-item" id="btnToggleLines"><span>Numeri riga</span><span id="linesCheck">✓</span></div>
                     <div class="menu-divider"></div>
-                    <!-- Extra -->
                     <div class="menu-item" id="btnCharCount"><span>Conta caratteri</span></div>
                 </div>
             </div>
         </div>
         
+        <!-- BARRA FORMATTAZIONE (Visibile solo per .txt e .dm8) -->
+        <div id="formatBar" class="format-bar">
+            <button class="btn-format" onclick="insertMarkdown('**', '**')" title="Grassetto">B</button>
+            <button class="btn-format italic" onclick="insertMarkdown('*', '*')" title="Corsivo">I</button>
+            <button class="btn-format underline" onclick="insertMarkdown('<u>', '</u>')" title="Sottolineato">U</button>
+            <button class="btn-format" onclick="insertMarkdown('# ', '')" title="Titolo Grande">H1</button>
+            <button class="btn-format" onclick="insertMarkdown('- ', '')" title="Elenco puntato">•</button>
+        </div>
+
         <div class="file-info-bar">
             <span id="fileNameDisplay">Senza titolo</span>
             <span id="fileStatusDisplay" class="file-status-original">non modificato</span>
@@ -429,6 +389,7 @@
             <div class="modal-body">
                 <input type="text" id="modalFileName" class="search-input" placeholder="Nome file">
                 <select id="modalFileExt">
+                    <option value=".dm8">.dm8</option>
                     <option value=".txt">.txt</option>
                     <option value=".html">.html</option>
                     <option value=".js">.js</option>
@@ -443,8 +404,7 @@
         </div>
     </div>
 
-    <!-- MESSAGGIO IN SOVRAIMPRESSIONE (TOAST) -->
-    <div id="toastOverlay" class="toast-overlay">Modalità selezionata</div>
+    <div id="toastOverlay" class="toast-overlay">Messaggio</div>
 
     <script>
         let fileHandle;
@@ -456,6 +416,7 @@
         
         const fileNameDisplay = document.getElementById('fileNameDisplay');
         const fileStatusDisplay = document.getElementById('fileStatusDisplay');
+        const formatBar = document.getElementById('formatBar');
 
         const menuBtn = document.getElementById('menuBtn');
         const dropdownMenu = document.getElementById('dropdownMenu');
@@ -478,14 +439,10 @@
         const toastOverlay = document.getElementById('toastOverlay');
         let toastTimeout;
 
-        // Impostazioni Layout
-        let isWrapEnabled = true;
-        let isLinesEnabled = true;
-
-        // --- GESTIONE FONT E DIMENSIONI ---
+        // --- GESTIONE IMPOSTAZIONI E LOCALSTORAGE ---
         const fonts = [
             { name: 'Verdana', value: 'Verdana, sans-serif' },
-            { name: 'Arial', value: 'Arial, sans-serif' },
+            { name: 'System Default', value: 'system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif' },
             { name: 'Georgia', value: 'Georgia, serif' },
             { name: 'Monospace', value: 'Consolas, Monaco, "Courier New", monospace' }
         ];
@@ -495,8 +452,18 @@
             { name: 'Grande', value: '17px' }
         ];
         
-        let currentFontIndex = 0; // Default Verdana
-        let currentSizeIndex = 1; // Default Medio
+        // Carica impostazioni salvate o usa default
+        let currentFontIndex = parseInt(localStorage.getItem('dm8_font')) || 0; 
+        let currentSizeIndex = parseInt(localStorage.getItem('dm8_size')) || 1; 
+        let isWrapEnabled = localStorage.getItem('dm8_wrap') !== 'false'; // Default true
+        let isLinesEnabled = localStorage.getItem('dm8_lines') === 'true'; // Default false
+
+        function saveSettingsToMemory() {
+            localStorage.setItem('dm8_font', currentFontIndex);
+            localStorage.setItem('dm8_size', currentSizeIndex);
+            localStorage.setItem('dm8_wrap', isWrapEnabled);
+            localStorage.setItem('dm8_lines', isLinesEnabled);
+        }
 
         function applyFontAndSize() {
             document.documentElement.style.setProperty('--editor-font', fonts[currentFontIndex].value);
@@ -505,7 +472,8 @@
             document.getElementById('btnFontFamily').innerHTML = `<span>Font: ${fonts[currentFontIndex].name}</span>`;
             document.getElementById('btnFontSize').innerHTML = `<span>Testo: ${sizes[currentSizeIndex].name}</span>`;
             
-            updateEditor(); // Forza ri-allineamento e ricalcolo Prism
+            saveSettingsToMemory();
+            updateEditor();
         }
 
         document.getElementById('btnFontFamily').addEventListener('click', (e) => {
@@ -520,37 +488,27 @@
             applyFontAndSize();
         });
 
-        // --- Funzione Toast (Messaggio temporaneo 1 secondo) ---
         function showToast(message) {
             toastOverlay.textContent = message;
             toastOverlay.classList.add('show');
             clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => {
-                toastOverlay.classList.remove('show');
-            }, 1000);
+            toastTimeout = setTimeout(() => { toastOverlay.classList.remove('show'); }, 1500);
         }
 
         replaceModeSelect.addEventListener('change', () => {
-            const selectedText = replaceModeSelect.options[replaceModeSelect.selectedIndex].text;
-            showToast(`Modalità: ${selectedText}`);
+            showToast(`Modalità: ${replaceModeSelect.options[replaceModeSelect.selectedIndex].text}`);
         });
 
-        // --- Gestione Menu e Interfaccia ---
         menuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             dropdownMenu.classList.toggle('show');
         });
-
-        document.addEventListener('click', () => {
-            dropdownMenu.classList.remove('show');
-        });
+        document.addEventListener('click', () => { dropdownMenu.classList.remove('show'); });
 
         function applyWrapState(forceValue = null) {
-            if (forceValue !== null) {
-                isWrapEnabled = forceValue;
-            } else {
-                isWrapEnabled = !isWrapEnabled;
-            }
+            if (forceValue !== null) isWrapEnabled = forceValue;
+            else isWrapEnabled = !isWrapEnabled;
+            
             document.getElementById('wrapCheck').textContent = isWrapEnabled ? '✓' : '';
             
             if (isWrapEnabled) {
@@ -565,36 +523,47 @@
 
             const elements = [editor, highlighting, highlightingContent];
             if (isWrapEnabled) {
-                elements.forEach(el => {
-                    el.classList.remove('wrap-disabled');
-                    el.classList.add('wrap-enabled');
-                });
+                elements.forEach(el => { el.classList.remove('wrap-disabled'); el.classList.add('wrap-enabled'); });
             } else {
-                elements.forEach(el => {
-                    el.classList.remove('wrap-enabled');
-                    el.classList.add('wrap-disabled');
-                });
+                elements.forEach(el => { el.classList.remove('wrap-enabled'); el.classList.add('wrap-disabled'); });
             }
+            
+            saveSettingsToMemory();
             updateEditor();
         }
 
         document.getElementById('btnToggleWrap').addEventListener('click', (e) => {
-            e.stopPropagation();
-            applyWrapState();
+            e.stopPropagation(); applyWrapState();
         });
 
         document.getElementById('btnToggleLines').addEventListener('click', (e) => {
             e.stopPropagation();
             if (isWrapEnabled) {
-                alert("I numeri di riga sono disponibili solo con 'Righe a capo' disabilitato.");
+                alert("I numeri di riga sono disponibili solo disattivando 'Righe a capo'.");
                 return;
             }
             isLinesEnabled = !isLinesEnabled;
             document.getElementById('linesCheck').textContent = isLinesEnabled ? '✓' : '';
             lineNumbers.style.display = isLinesEnabled ? 'block' : 'none';
+            saveSettingsToMemory();
         });
 
-        // --- Gestione Stato File ---
+        // --- FORMATTAZIONE TESTO (Markdown) ---
+        function insertMarkdown(prefix, suffix) {
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const text = editor.value;
+            const selected = text.substring(start, end);
+            
+            editor.value = text.substring(0, start) + prefix + selected + suffix + text.substring(end);
+            editor.selectionStart = start + prefix.length;
+            editor.selectionEnd = start + prefix.length + selected.length;
+            
+            editor.focus();
+            saveState();
+            updateEditor();
+        }
+
         function setFileStatus(status) {
             fileStatusDisplay.className = '';
             if (status === 'non modificato') {
@@ -610,14 +579,10 @@
         }
 
         function checkContentStatus() {
-            if (editor.value === originalContent) {
-                setFileStatus('non modificato');
-            } else {
-                setFileStatus('modificato');
-            }
+            if (editor.value === originalContent) setFileStatus('non modificato');
+            else setFileStatus('modificato');
         }
 
-        // --- Undo / Redo ---
         let historyStack = [''];
         let historyIndex = 0;
         let isUndoRedoAction = false;
@@ -635,82 +600,58 @@
 
         document.getElementById('undoBtn').addEventListener('click', () => {
             if (historyIndex > 0) {
-                isUndoRedoAction = true;
-                historyIndex--;
+                isUndoRedoAction = true; historyIndex--;
                 editor.value = historyStack[historyIndex];
-                updateEditor();
-                checkContentStatus();
-                isUndoRedoAction = false;
+                updateEditor(); checkContentStatus(); isUndoRedoAction = false;
             }
         });
 
         document.getElementById('redoBtn').addEventListener('click', () => {
             if (historyIndex < historyStack.length - 1) {
-                isUndoRedoAction = true;
-                historyIndex++;
+                isUndoRedoAction = true; historyIndex++;
                 editor.value = historyStack[historyIndex];
-                updateEditor();
-                checkContentStatus();
-                isUndoRedoAction = false;
+                updateEditor(); checkContentStatus(); isUndoRedoAction = false;
             }
         });
 
-        // --- Trova e Sostituisci ---
-        toggleReplace.addEventListener('click', () => {
-            replaceBar.classList.toggle('show');
-        });
+        toggleReplace.addEventListener('click', () => { replaceBar.classList.toggle('show'); });
 
         btnReplace.addEventListener('click', () => {
             const query = searchInput.value;
             const replaceText = replaceInput.value;
             if (!query) return;
-
             const mode = replaceModeSelect.value;
 
             if (mode === 'all') {
                 const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
                 editor.value = editor.value.replace(regex, replaceText);
-                saveState();
-                updateEditor();
+                saveState(); updateEditor(); showToast("Tutto sostituito");
             } else if (mode === 'one') {
-                if (searchMatches.length === 0 || currentMatchIndex < 0) {
-                    performSearch();
-                }
-
+                if (searchMatches.length === 0 || currentMatchIndex < 0) performSearch();
                 if (searchMatches.length > 0 && currentMatchIndex >= 0 && currentMatchIndex < searchMatches.length) {
                     const match = searchMatches[currentMatchIndex];
                     const fullText = editor.value;
                     editor.value = fullText.slice(0, match.index) + replaceText + fullText.slice(match.index + match.length);
-                    
-                    saveState();
-                    updateEditor();
-
+                    saveState(); updateEditor();
                     if (searchMatches.length > 0) {
-                        if (currentMatchIndex >= searchMatches.length) {
-                            currentMatchIndex = 0;
-                        }
+                        if (currentMatchIndex >= searchMatches.length) currentMatchIndex = 0;
                         scrollToAndHighlightMatch(currentMatchIndex, true);
                     }
                 }
             }
         });
 
-        // Bottoni testuali del Menu
         document.getElementById('btnUpper').addEventListener('click', () => { editor.value = editor.value.toUpperCase(); saveState(); updateEditor(); });
         document.getElementById('btnLower').addEventListener('click', () => { editor.value = editor.value.toLowerCase(); saveState(); updateEditor(); });
         document.getElementById('btnSentence').addEventListener('click', () => {
-            let text = editor.value.toLowerCase();
-            editor.value = text.replace(/(^\s*|[.!?]\s+)([a-zàèéìòù])/g, (m, p1, p2) => p1 + p2.toUpperCase());
+            editor.value = editor.value.toLowerCase().replace(/(^\s*|[.!?]\s+)([a-zàèéìòù])/g, (m, p1, p2) => p1 + p2.toUpperCase());
             saveState(); updateEditor();
         });
         document.getElementById('btnCharCount').addEventListener('click', () => {
             const text = editor.value;
-            const charCount = text.length;
-            const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
-            alert(`Statistiche Testo:\n\n• Caratteri totali: ${charCount}\n• Parole totali: ${wordCount}`);
+            alert(`Statistiche Testo:\n\n• Caratteri totali: ${text.length}\n• Parole totali: ${text.trim() ? text.trim().split(/\s+/).length : 0}`);
         });
 
-        // --- Sincronizzazione ed Editor ---
         function updateEditor() {
             let text = editor.value;
             if (text.endsWith("\n")) text += " ";
@@ -732,49 +673,41 @@
         }
 
         function setLanguage(fileName) {
-            const ext = fileName ? fileName.split('.').pop().toLowerCase() : 'txt';
+            const ext = fileName ? fileName.split('.').pop().toLowerCase() : 'dm8';
             highlightingContent.className = 'wrap-enabled';
             if (!isWrapEnabled) highlightingContent.classList.replace('wrap-enabled', 'wrap-disabled');
             
-            // Logica auto-selezione Font base all'estensione
+            // Auto-selezione Font base all'estensione
             if (['html', 'htm', 'js', 'css', 'asp'].includes(ext)) {
-                currentFontIndex = 3; // Imposta su Monospace per i file di codice
+                currentFontIndex = 3; // Monospace
+                formatBar.classList.remove('show');
             } else {
-                currentFontIndex = 0; // Imposta su Verdana per .txt o nuovi documenti
+                currentFontIndex = parseInt(localStorage.getItem('dm8_font')) || 0; // Ripristina l'ultimo font scelto per i testi
+                formatBar.classList.add('show'); // Mostra barra per txt e dm8
             }
             applyFontAndSize();
 
-            // Applicazione Sintassi Prism
+            // Applicazione Sintassi Prism (dm8 usa markdown per colorare testo e formattazione!)
             if (ext === 'html' || ext === 'htm' || ext === 'asp') highlightingContent.classList.add('language-markup');
             else if (ext === 'js') highlightingContent.classList.add('language-javascript');
             else if (ext === 'css') highlightingContent.classList.add('language-css');
+            else if (ext === 'dm8' || ext === 'md') highlightingContent.classList.add('language-markdown');
             else highlightingContent.classList.add('language-plaintext');
         }
 
-        let searchMatches = [];
-        let currentMatchIndex = -1;
+        let searchMatches = []; let currentMatchIndex = -1;
 
         function performSearch() {
             const query = searchInput.value;
-            const text = editor.value;
             searchMatches = [];
-            if (!query) {
-                searchCount.textContent = '0/0';
-                currentMatchIndex = -1;
-                return;
-            }
+            if (!query) { searchCount.textContent = '0/0'; currentMatchIndex = -1; return; }
             let match;
             const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-            while ((match = regex.exec(text)) !== null) {
-                searchMatches.push({ index: match.index, length: match[0].length });
-            }
+            while ((match = regex.exec(editor.value)) !== null) searchMatches.push({ index: match.index, length: match[0].length });
             if (searchMatches.length > 0) {
                 if (currentMatchIndex < 0 || currentMatchIndex >= searchMatches.length) currentMatchIndex = 0;
                 searchCount.textContent = `${currentMatchIndex + 1}/${searchMatches.length}`;
-            } else {
-                currentMatchIndex = -1;
-                searchCount.textContent = '0/0';
-            }
+            } else { currentMatchIndex = -1; searchCount.textContent = '0/0'; }
         }
 
         function scrollToAndHighlightMatch(index, shouldFocus = false) {
@@ -787,69 +720,37 @@
             }
         }
 
-        searchInput.addEventListener('input', () => {
-            currentMatchIndex = 0;
-            performSearch();
-            scrollToAndHighlightMatch(currentMatchIndex, false); 
-        });
-        nextSearch.addEventListener('click', () => {
-            if (!isWrapEnabled) applyWrapState(true);
-            if (searchMatches.length > 0) {
-                currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length;
-                scrollToAndHighlightMatch(currentMatchIndex, true); 
-            }
-        });
-        prevSearch.addEventListener('click', () => {
-            if (!isWrapEnabled) applyWrapState(true);
-            if (searchMatches.length > 0) {
-                currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
-                scrollToAndHighlightMatch(currentMatchIndex, true); 
-            }
-        });
+        searchInput.addEventListener('input', () => { currentMatchIndex = 0; performSearch(); scrollToAndHighlightMatch(currentMatchIndex, false); });
+        nextSearch.addEventListener('click', () => { if (!isWrapEnabled) applyWrapState(true); if (searchMatches.length > 0) { currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length; scrollToAndHighlightMatch(currentMatchIndex, true); }});
+        prevSearch.addEventListener('click', () => { if (!isWrapEnabled) applyWrapState(true); if (searchMatches.length > 0) { currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length; scrollToAndHighlightMatch(currentMatchIndex, true); }});
 
         let debounceTimer;
         editor.addEventListener('input', () => {
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                saveState();
-                updateEditor();
-            }, 50);
+            debounceTimer = setTimeout(() => { saveState(); updateEditor(); }, 50);
         });
-
         editor.addEventListener('scroll', syncScroll);
 
-        // --- File System API e Gestione Modale ---
-
+        // --- GESTIONE SALVATAGGIO E MODALE ---
         function openSaveModal() {
             let currentName = fileNameDisplay.textContent;
             if (currentName === 'Senza titolo') {
-                modalFileName.value = 'Nuovo_Documento';
-                modalFileExt.value = '.txt';
+                modalFileName.value = 'Nuovo_Documento'; modalFileExt.value = '.dm8';
             } else {
                 const lastDotIndex = currentName.lastIndexOf('.');
                 if (lastDotIndex !== -1) {
+                    modalFileName.value = currentName.substring(0, lastDotIndex);
                     const ext = currentName.substring(lastDotIndex);
-                    const name = currentName.substring(0, lastDotIndex);
-                    modalFileName.value = name;
-                    
-                    const optionExists = Array.from(modalFileExt.options).some(opt => opt.value === ext);
-                    if (optionExists) {
-                        modalFileExt.value = ext;
-                    } else {
-                        modalFileExt.value = '.txt';
-                    }
+                    if (Array.from(modalFileExt.options).some(opt => opt.value === ext)) modalFileExt.value = ext;
+                    else modalFileExt.value = '.dm8';
                 } else {
-                    modalFileName.value = currentName;
-                    modalFileExt.value = '.txt';
+                    modalFileName.value = currentName; modalFileExt.value = '.dm8';
                 }
             }
-            saveModal.classList.add('show');
-            modalFileName.focus();
+            saveModal.classList.add('show'); modalFileName.focus();
         }
 
-        modalCancelBtn.addEventListener('click', () => {
-            saveModal.classList.remove('show');
-        });
+        modalCancelBtn.addEventListener('click', () => saveModal.classList.remove('show'));
 
         modalConfirmBtn.addEventListener('click', async () => {
             saveModal.classList.remove('show');
@@ -857,7 +758,6 @@
             const ext = modalFileExt.value;
             const fullFileName = name + ext;
 
-            // Mappatura esatta del tipo MIME per evitare che il browser forzi l'estensione sbagliata
             let mimeType = 'text/plain';
             if (ext === '.html' || ext === '.htm') mimeType = 'text/html';
             else if (ext === '.js') mimeType = 'text/javascript';
@@ -866,103 +766,68 @@
             try {
                 const newHandle = await window.showSaveFilePicker({
                     suggestedName: fullFileName,
-                    types: [{
-                        description: `File ${ext.toUpperCase()}`,
-                        accept: {
-                            [mimeType]: [ext] // Passiamo solo ed esclusivamente l'estensione scelta
-                        }
-                    }]
+                    types: [{ description: `File ${ext.toUpperCase()}`, accept: { [mimeType]: [ext] } }]
                 });
                 const writable = await newHandle.createWritable();
                 await writable.write(editor.value);
                 await writable.close();
                 
-                fileHandle = newHandle;
-                originalContent = editor.value;
+                fileHandle = newHandle; originalContent = editor.value;
                 fileNameDisplay.textContent = fileHandle.name;
-                setLanguage(fileHandle.name);
-                setFileStatus('salvato');
-            } catch (err) {
-                console.log('Salvataggio annullato o non riuscito', err);
-            }
+                setLanguage(fileHandle.name); setFileStatus('salvato');
+                showToast('Documento salvato');
+            } catch (err) { console.log('Salvataggio annullato', err); }
         });
 
-        // NUOVO FILE
-        document.getElementById('newBtn').addEventListener('click', async () => {
+        document.getElementById('newBtn').addEventListener('click', () => {
             if (fileStatusDisplay.textContent === 'modificato') {
-                const confirmSave = confirm("Il documento attuale è stato modificato. Vuoi salvarlo prima di creare un nuovo file?");
-                if (confirmSave) {
-                    alert("Per favore, salva il documento prima di procedere.");
-                    return;
-                }
+                if (!confirm("Il documento è modificato. Vuoi creare un nuovo file senza salvare?")) return;
             }
-            fileHandle = null;
-            originalContent = '';
-            editor.value = '';
-            historyStack = [''];
-            historyIndex = 0;
+            fileHandle = null; originalContent = ''; editor.value = '';
+            historyStack = ['']; historyIndex = 0;
             fileNameDisplay.textContent = 'Senza titolo';
-            setLanguage('Senza titolo.txt'); // resetta su Verdana
-            setFileStatus('non modificato');
-            updateEditor();
+            setLanguage('Senza titolo.dm8'); setFileStatus('non modificato'); updateEditor();
         });
 
-        // APRI FILE
         document.getElementById('openBtn').addEventListener('click', async () => {
             try {
                 [fileHandle] = await window.showOpenFilePicker({
-                    types: [{
-                        description: 'File di testo e codice',
-                        accept: {
-                            'text/plain': ['.txt', '.html', '.htm', '.js', '.css', '.asp']
-                        }
-                    }]
+                    types: [{ description: 'File Supportati', accept: { 'text/plain': ['.txt', '.dm8', '.html', '.htm', '.js', '.css', '.asp'] } }]
                 });
                 const file = await fileHandle.getFile();
                 fileNameDisplay.textContent = file.name;
-                
                 originalContent = await file.text();
                 editor.value = originalContent;
-                
-                historyStack = [editor.value];
-                historyIndex = 0;
-                setLanguage(file.name); // Applica sintassi e sceglie Verdana/Monospace
-                setFileStatus('non modificato');
-                updateEditor();
-            } catch (err) {
-                console.log('Apertura annullata', err);
-            }
+                historyStack = [editor.value]; historyIndex = 0;
+                setLanguage(file.name); setFileStatus('non modificato'); updateEditor();
+            } catch (err) { console.log('Apertura annullata', err); }
         });
 
-        // SALVA FILE
+        // Tasto "Salva" Diretto corretto
         document.getElementById('saveBtn').addEventListener('click', async () => {
             if (!fileHandle) {
                 openSaveModal();
             } else {
-                const confirmSave = confirm(`Vuoi sovrascrivere le modifiche nel file: ${fileHandle.name}?`);
-                if (confirmSave) {
-                    try {
-                        const writable = await fileHandle.createWritable();
-                        await writable.write(editor.value);
-                        await writable.close();
-                        
-                        originalContent = editor.value;
-                        setFileStatus('salvato');
-                    } catch (err) {
-                        console.log('Salvataggio sovrascrittura fallito', err);
-                    }
+                try {
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(editor.value);
+                    await writable.close();
+                    
+                    originalContent = editor.value;
+                    setFileStatus('salvato');
+                    showToast('Modifiche salvate');
+                } catch (err) {
+                    console.log('Salvataggio sovrascrittura fallito', err);
+                    alert("Salvataggio fallito. Potrebbe mancare il permesso del browser.");
                 }
             }
         });
 
-        // SALVA CON NOME (SCN)
-        document.getElementById('saveAsBtn').addEventListener('click', () => {
-            openSaveModal();
-        });
+        document.getElementById('saveAsBtn').addEventListener('click', () => openSaveModal());
 
-        // Avvio iniziale
-        applyFontAndSize();
-        applyWrapState(true);
+        // Inizializzazione avvio
+        applyWrapState(isWrapEnabled);
+        setLanguage(''); // Avvia in dm8 mode
     </script>
 </body>
 </html>
