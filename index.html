@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Editor di Testo e Codice</title>
+    <title>Editor DM8</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121212">
     <!-- Componenti Prism per Evidenziazione Sintassi -->
@@ -279,7 +279,7 @@
 
     <header>
         <div class="top-bar">
-            <button id="newBtn" class="btn-action">+</button>
+            <button id="newBtn" class="btn-action">New</button>
             <button id="openBtn" class="btn-action">Apri</button>
             <button id="saveBtn" class="btn-action">Salva</button>
             <button id="saveAsBtn" class="btn-action">SCN</button>
@@ -328,7 +328,7 @@
 
         <div id="replaceBar" class="replace-bar">
             <input type="text" id="replaceInput" class="search-input" placeholder="Sostituisci con...">
-            <select id="replaceModeSelect" class="select-mode">
+            <select id="replaceModeSelect" class="select-mode" style="padding: 7px;">
                 <option value="all">Tutte le ricorrenze</option>
                 <option value="one">Una alla volta</option>
             </select>
