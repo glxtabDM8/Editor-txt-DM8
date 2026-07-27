@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Editor DM8</title>
+    <title>Editor di Testo e Codice</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#121212">
-    <!-- Componenti Prism (Aggiunto Markdown per i file .dm8) -->
+    <!-- Componenti Prism per Evidenziazione Sintassi -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-aspnet.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
     <style>
         :root {
@@ -33,59 +32,23 @@
             height: 100dvh;
             padding: 8px;
         }
-        header {
+        header, footer {
             flex-shrink: 0;
             z-index: 100;
             display: flex;
             flex-direction: column;
             gap: 6px;
-            padding-bottom: 8px;
             background-color: #121212;
         }
-        footer {
-            flex-shrink: 0;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            padding-top: 8px;
-            background-color: #121212;
-        }
+        header { padding-bottom: 8px; }
+        footer { padding-top: 8px; }
+
         .top-bar {
             display: flex;
             gap: 6px;
             align-items: center;
             flex-wrap: wrap;
         }
-        
-        /* BARRA FORMATTAZIONE TESTO */
-        .format-bar {
-            display: none; /* Nascosta di default, mostrata solo per txt e dm8 */
-            gap: 6px;
-            align-items: center;
-            background-color: #1e293b;
-            padding: 4px 6px;
-            border-radius: 6px;
-            border: 1px solid #334155;
-        }
-        .format-bar.show { display: flex; }
-        .btn-format {
-            background: none;
-            border: none;
-            color: #e2e8f0;
-            font-size: 14px;
-            font-weight: bold;
-            width: 28px;
-            height: 28px;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .btn-format:hover, .btn-format:active { background-color: #334155; }
-        .btn-format.italic { font-style: italic; }
-        .btn-format.underline { text-decoration: underline; }
 
         .btn-action {
             flex: 1;
@@ -104,6 +67,7 @@
             min-width: 10px;
         }
         .btn-action:active { background-color: #0284c7; }
+        
         .menu-wrapper { position: relative; }
         .btn-menu {
             width: 36px;
@@ -268,7 +232,6 @@
         }
         textarea::selection { background-color: rgba(14, 165, 233, 0.4); color: transparent; }
 
-        /* MODALE E TOAST */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -339,18 +302,9 @@
                 </div>
             </div>
         </div>
-        
-        <!-- BARRA FORMATTAZIONE (Visibile solo per .txt e .dm8) -->
-        <div id="formatBar" class="format-bar">
-            <button class="btn-format" onclick="insertMarkdown('**', '**')" title="Grassetto">B</button>
-            <button class="btn-format italic" onclick="insertMarkdown('*', '*')" title="Corsivo">I</button>
-            <button class="btn-format underline" onclick="insertMarkdown('<u>', '</u>')" title="Sottolineato">U</button>
-            <button class="btn-format" onclick="insertMarkdown('# ', '')" title="Titolo Grande">H1</button>
-            <button class="btn-format" onclick="insertMarkdown('- ', '')" title="Elenco puntato">•</button>
-        </div>
 
         <div class="file-info-bar">
-            <span id="fileNameDisplay">Senza titolo</span>
+            <span id="fileNameDisplay">Senza titolo.txt</span>
             <span id="fileStatusDisplay" class="file-status-original">non modificato</span>
         </div>
     </header>
@@ -385,11 +339,10 @@
     <!-- MODALE SALVATAGGIO CON NOME -->
     <div id="saveModal" class="modal-overlay">
         <div class="modal-content">
-            <h3 id="modalTitle">Salva documento</h3>
+            <h3 id="modalTitle">Salva documento con nome</h3>
             <div class="modal-body">
                 <input type="text" id="modalFileName" class="search-input" placeholder="Nome file">
                 <select id="modalFileExt">
-                    <option value=".dm8">.dm8</option>
                     <option value=".txt">.txt</option>
                     <option value=".html">.html</option>
                     <option value=".js">.js</option>
@@ -407,7 +360,7 @@
     <div id="toastOverlay" class="toast-overlay">Messaggio</div>
 
     <script>
-        let fileHandle;
+        let fileHandle = null;
         let originalContent = '';
         const editor = document.getElementById('editor');
         const highlightingContent = document.getElementById('highlighting-content');
@@ -416,7 +369,6 @@
         
         const fileNameDisplay = document.getElementById('fileNameDisplay');
         const fileStatusDisplay = document.getElementById('fileStatusDisplay');
-        const formatBar = document.getElementById('formatBar');
 
         const menuBtn = document.getElementById('menuBtn');
         const dropdownMenu = document.getElementById('dropdownMenu');
@@ -439,7 +391,7 @@
         const toastOverlay = document.getElementById('toastOverlay');
         let toastTimeout;
 
-        // --- GESTIONE IMPOSTAZIONI E LOCALSTORAGE ---
+        // --- GESTIONE IMPOSTAZIONI E MEMORIA ---
         const fonts = [
             { name: 'Verdana', value: 'Verdana, sans-serif' },
             { name: 'System Default', value: 'system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif' },
@@ -452,17 +404,16 @@
             { name: 'Grande', value: '17px' }
         ];
         
-        // Carica impostazioni salvate o usa default
-        let currentFontIndex = parseInt(localStorage.getItem('dm8_font')) || 0; 
-        let currentSizeIndex = parseInt(localStorage.getItem('dm8_size')) || 1; 
-        let isWrapEnabled = localStorage.getItem('dm8_wrap') !== 'false'; // Default true
-        let isLinesEnabled = localStorage.getItem('dm8_lines') === 'true'; // Default false
+        let currentFontIndex = parseInt(localStorage.getItem('app_font')) || 0; 
+        let currentSizeIndex = parseInt(localStorage.getItem('app_size')) || 1; 
+        let isWrapEnabled = localStorage.getItem('app_wrap') !== 'false';
+        let isLinesEnabled = localStorage.getItem('app_lines') === 'true';
 
-        function saveSettingsToMemory() {
-            localStorage.setItem('dm8_font', currentFontIndex);
-            localStorage.setItem('dm8_size', currentSizeIndex);
-            localStorage.setItem('dm8_wrap', isWrapEnabled);
-            localStorage.setItem('dm8_lines', isLinesEnabled);
+        function saveSettings() {
+            localStorage.setItem('app_font', currentFontIndex);
+            localStorage.setItem('app_size', currentSizeIndex);
+            localStorage.setItem('app_wrap', isWrapEnabled);
+            localStorage.setItem('app_lines', isLinesEnabled);
         }
 
         function applyFontAndSize() {
@@ -472,7 +423,7 @@
             document.getElementById('btnFontFamily').innerHTML = `<span>Font: ${fonts[currentFontIndex].name}</span>`;
             document.getElementById('btnFontSize').innerHTML = `<span>Testo: ${sizes[currentSizeIndex].name}</span>`;
             
-            saveSettingsToMemory();
+            saveSettings();
             updateEditor();
         }
 
@@ -494,10 +445,6 @@
             clearTimeout(toastTimeout);
             toastTimeout = setTimeout(() => { toastOverlay.classList.remove('show'); }, 1500);
         }
-
-        replaceModeSelect.addEventListener('change', () => {
-            showToast(`Modalità: ${replaceModeSelect.options[replaceModeSelect.selectedIndex].text}`);
-        });
 
         menuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -528,7 +475,7 @@
                 elements.forEach(el => { el.classList.remove('wrap-enabled'); el.classList.add('wrap-disabled'); });
             }
             
-            saveSettingsToMemory();
+            saveSettings();
             updateEditor();
         }
 
@@ -539,30 +486,14 @@
         document.getElementById('btnToggleLines').addEventListener('click', (e) => {
             e.stopPropagation();
             if (isWrapEnabled) {
-                alert("I numeri di riga sono disponibili solo disattivando 'Righe a capo'.");
+                alert("I numeri di riga sono disponibili disattivando 'Righe a capo'.");
                 return;
             }
             isLinesEnabled = !isLinesEnabled;
             document.getElementById('linesCheck').textContent = isLinesEnabled ? '✓' : '';
             lineNumbers.style.display = isLinesEnabled ? 'block' : 'none';
-            saveSettingsToMemory();
+            saveSettings();
         });
-
-        // --- FORMATTAZIONE TESTO (Markdown) ---
-        function insertMarkdown(prefix, suffix) {
-            const start = editor.selectionStart;
-            const end = editor.selectionEnd;
-            const text = editor.value;
-            const selected = text.substring(start, end);
-            
-            editor.value = text.substring(0, start) + prefix + selected + suffix + text.substring(end);
-            editor.selectionStart = start + prefix.length;
-            editor.selectionEnd = start + prefix.length + selected.length;
-            
-            editor.focus();
-            saveState();
-            updateEditor();
-        }
 
         function setFileStatus(status) {
             fileStatusDisplay.className = '';
@@ -652,12 +583,13 @@
             alert(`Statistiche Testo:\n\n• Caratteri totali: ${text.length}\n• Parole totali: ${text.trim() ? text.trim().split(/\s+/).length : 0}`);
         });
 
+        // --- SINTASSI E AGGIORNAMENTO EDITOR ---
         function updateEditor() {
             let text = editor.value;
             if (text.endsWith("\n")) text += " ";
+            
             highlightingContent.textContent = text;
             Prism.highlightElement(highlightingContent);
-            highlighting.style.width = '100%';
 
             const rawLines = editor.value.split('\n');
             lineNumbers.textContent = rawLines.map((_, i) => (i + 1) + ' ').join('\n');
@@ -673,26 +605,21 @@
         }
 
         function setLanguage(fileName) {
-            const ext = fileName ? fileName.split('.').pop().toLowerCase() : 'dm8';
-            highlightingContent.className = 'wrap-enabled';
-            if (!isWrapEnabled) highlightingContent.classList.replace('wrap-enabled', 'wrap-disabled');
+            const ext = fileName ? fileName.split('.').pop().toLowerCase() : 'txt';
             
-            // Auto-selezione Font base all'estensione
-            if (['html', 'htm', 'js', 'css', 'asp'].includes(ext)) {
-                currentFontIndex = 3; // Monospace
-                formatBar.classList.remove('show');
+            highlightingContent.className = isWrapEnabled ? 'wrap-enabled' : 'wrap-disabled';
+            
+            if (ext === 'html' || ext === 'htm' || ext === 'asp') {
+                highlightingContent.classList.add('language-markup');
+            } else if (ext === 'js') {
+                highlightingContent.classList.add('language-javascript');
+            } else if (ext === 'css') {
+                highlightingContent.classList.add('language-css');
             } else {
-                currentFontIndex = parseInt(localStorage.getItem('dm8_font')) || 0; // Ripristina l'ultimo font scelto per i testi
-                formatBar.classList.add('show'); // Mostra barra per txt e dm8
+                highlightingContent.classList.add('language-plaintext');
             }
-            applyFontAndSize();
 
-            // Applicazione Sintassi Prism (dm8 usa markdown per colorare testo e formattazione!)
-            if (ext === 'html' || ext === 'htm' || ext === 'asp') highlightingContent.classList.add('language-markup');
-            else if (ext === 'js') highlightingContent.classList.add('language-javascript');
-            else if (ext === 'css') highlightingContent.classList.add('language-css');
-            else if (ext === 'dm8' || ext === 'md') highlightingContent.classList.add('language-markdown');
-            else highlightingContent.classList.add('language-plaintext');
+            updateEditor();
         }
 
         let searchMatches = []; let currentMatchIndex = -1;
@@ -724,30 +651,39 @@
         nextSearch.addEventListener('click', () => { if (!isWrapEnabled) applyWrapState(true); if (searchMatches.length > 0) { currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length; scrollToAndHighlightMatch(currentMatchIndex, true); }});
         prevSearch.addEventListener('click', () => { if (!isWrapEnabled) applyWrapState(true); if (searchMatches.length > 0) { currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length; scrollToAndHighlightMatch(currentMatchIndex, true); }});
 
+        // Eventi di Scrittura e Incolla
         let debounceTimer;
         editor.addEventListener('input', () => {
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => { saveState(); updateEditor(); }, 50);
+            debounceTimer = setTimeout(() => { saveState(); updateEditor(); }, 30);
         });
+        
+        editor.addEventListener('paste', () => {
+            setTimeout(() => { saveState(); updateEditor(); }, 10);
+        });
+
         editor.addEventListener('scroll', syncScroll);
 
-        // --- GESTIONE SALVATAGGIO E MODALE ---
+        // --- SALVATAGGIO FILE ---
         function openSaveModal() {
             let currentName = fileNameDisplay.textContent;
-            if (currentName === 'Senza titolo') {
-                modalFileName.value = 'Nuovo_Documento'; modalFileExt.value = '.dm8';
+            if (currentName === 'Senza titolo.txt' || !currentName) {
+                modalFileName.value = 'Nuovo_Documento'; 
+                modalFileExt.value = '.txt';
             } else {
                 const lastDotIndex = currentName.lastIndexOf('.');
                 if (lastDotIndex !== -1) {
                     modalFileName.value = currentName.substring(0, lastDotIndex);
                     const ext = currentName.substring(lastDotIndex);
                     if (Array.from(modalFileExt.options).some(opt => opt.value === ext)) modalFileExt.value = ext;
-                    else modalFileExt.value = '.dm8';
+                    else modalFileExt.value = '.txt';
                 } else {
-                    modalFileName.value = currentName; modalFileExt.value = '.dm8';
+                    modalFileName.value = currentName; 
+                    modalFileExt.value = '.txt';
                 }
             }
-            saveModal.classList.add('show'); modalFileName.focus();
+            saveModal.classList.add('show'); 
+            modalFileName.focus();
         }
 
         modalCancelBtn.addEventListener('click', () => saveModal.classList.remove('show'));
@@ -758,52 +694,64 @@
             const ext = modalFileExt.value;
             const fullFileName = name + ext;
 
-            let mimeType = 'text/plain';
-            if (ext === '.html' || ext === '.htm') mimeType = 'text/html';
-            else if (ext === '.js') mimeType = 'text/javascript';
-            else if (ext === '.css') mimeType = 'text/css';
+            const extMap = {
+                '.txt': { desc: 'File di Testo', mime: 'text/plain' },
+                '.html': { desc: 'Documento HTML', mime: 'text/html' },
+                '.js': { desc: 'File JavaScript', mime: 'text/javascript' },
+                '.css': { desc: 'Foglio di Stile CSS', mime: 'text/css' },
+                '.asp': { desc: 'File ASP', mime: 'text/plain' }
+            };
 
             try {
                 const newHandle = await window.showSaveFilePicker({
                     suggestedName: fullFileName,
-                    types: [{ description: `File ${ext.toUpperCase()}`, accept: { [mimeType]: [ext] } }]
+                    types: [{
+                        description: extMap[ext].desc,
+                        accept: { [extMap[ext].mime]: [ext] }
+                    }]
                 });
+                
                 const writable = await newHandle.createWritable();
                 await writable.write(editor.value);
                 await writable.close();
                 
-                fileHandle = newHandle; originalContent = editor.value;
+                fileHandle = newHandle; 
+                originalContent = editor.value;
                 fileNameDisplay.textContent = fileHandle.name;
-                setLanguage(fileHandle.name); setFileStatus('salvato');
-                showToast('Documento salvato');
-            } catch (err) { console.log('Salvataggio annullato', err); }
+                
+                setLanguage(fileHandle.name); 
+                setFileStatus('salvato');
+                showToast('File salvato con nome');
+            } catch (err) { 
+                console.log('Salvataggio annullato', err); 
+            }
         });
 
         document.getElementById('newBtn').addEventListener('click', () => {
             if (fileStatusDisplay.textContent === 'modificato') {
-                if (!confirm("Il documento è modificato. Vuoi creare un nuovo file senza salvare?")) return;
+                if (!confirm("Il documento è modificato. Vuoi crearne uno nuovo senza salvare?")) return;
             }
             fileHandle = null; originalContent = ''; editor.value = '';
             historyStack = ['']; historyIndex = 0;
-            fileNameDisplay.textContent = 'Senza titolo';
-            setLanguage('Senza titolo.dm8'); setFileStatus('non modificato'); updateEditor();
+            fileNameDisplay.textContent = 'Senza titolo.txt';
+            setLanguage('Senza titolo.txt'); setFileStatus('non modificato'); updateEditor();
         });
 
         document.getElementById('openBtn').addEventListener('click', async () => {
             try {
                 [fileHandle] = await window.showOpenFilePicker({
-                    types: [{ description: 'File Supportati', accept: { 'text/plain': ['.txt', '.dm8', '.html', '.htm', '.js', '.css', '.asp'] } }]
+                    types: [{ description: 'File di testo e codice', accept: { 'text/plain': ['.txt', '.html', '.htm', '.js', '.css', '.asp'] } }]
                 });
                 const file = await fileHandle.getFile();
                 fileNameDisplay.textContent = file.name;
                 originalContent = await file.text();
                 editor.value = originalContent;
                 historyStack = [editor.value]; historyIndex = 0;
-                setLanguage(file.name); setFileStatus('non modificato'); updateEditor();
+                setLanguage(file.name); setFileStatus('non modificato');
             } catch (err) { console.log('Apertura annullata', err); }
         });
 
-        // Tasto "Salva" Diretto corretto
+        // Pulsante SALVA DIRETTO
         document.getElementById('saveBtn').addEventListener('click', async () => {
             if (!fileHandle) {
                 openSaveModal();
@@ -817,17 +765,18 @@
                     setFileStatus('salvato');
                     showToast('Modifiche salvate');
                 } catch (err) {
-                    console.log('Salvataggio sovrascrittura fallito', err);
-                    alert("Salvataggio fallito. Potrebbe mancare il permesso del browser.");
+                    console.log('Salvataggio diretto fallito, apro modale', err);
+                    openSaveModal();
                 }
             }
         });
 
         document.getElementById('saveAsBtn').addEventListener('click', () => openSaveModal());
 
-        // Inizializzazione avvio
+        // Inizializzazione
+        applyFontAndSize();
         applyWrapState(isWrapEnabled);
-        setLanguage(''); // Avvia in dm8 mode
+        setLanguage('Senza titolo.txt');
     </script>
 </body>
 </html>
