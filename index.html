@@ -14,6 +14,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-aspnet.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
     <style>
+        :root {
+            /* Variabili dinamiche per il font modificate via JS */
+            --editor-font: Verdana, sans-serif;
+            --editor-size: 15px;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -25,7 +31,6 @@
             overflow: hidden;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
-        /* Layout flessibile basato su dvh */
         body {
             display: flex;
             flex-direction: column;
@@ -97,7 +102,7 @@
             position: absolute;
             top: 40px;
             right: 0;
-            width: 220px;
+            width: 230px;
             background-color: #1e293b;
             border: 1px solid #475569;
             border-radius: 8px;
@@ -126,7 +131,6 @@
             margin: 4px 0;
         }
         
-        /* Stili Ricerca in basso */
         .search-bar, .replace-bar {
             display: flex;
             gap: 6px;
@@ -208,8 +212,8 @@
             padding: 12px 6px;
             background-color: #f0f0f0;
             color: #888888;
-            font-family: Consolas, Monaco, "Courier New", monospace !important;
-            font-size: 15px !important;
+            font-family: var(--editor-font) !important;
+            font-size: var(--editor-size) !important;
             line-height: 1.5 !important;
             text-align: right;
             user-select: none;
@@ -226,6 +230,8 @@
             overflow: hidden;
             display: flex;
         }
+        
+        /* Regole applicate in comune per perfetta sovrapposizione */
         .text-layer {
             position: absolute;
             top: 0;
@@ -235,8 +241,8 @@
             padding: 12px !important;
             margin: 0 !important;
             border: none !important;
-            font-family: Consolas, Monaco, "Courier New", monospace !important;
-            font-size: 15px !important;
+            font-family: var(--editor-font) !important;
+            font-size: var(--editor-size) !important;
             line-height: 1.5 !important;
             box-sizing: border-box !important;
             tab-size: 4;
@@ -262,8 +268,8 @@
             overflow: hidden !important;
         }
         code {
-            font-family: Consolas, Monaco, "Courier New", monospace !important;
-            font-size: 15px !important;
+            font-family: var(--editor-font) !important;
+            font-size: var(--editor-size) !important;
             line-height: 1.5 !important;
             padding: 0 !important;
             background: transparent !important;
@@ -285,7 +291,7 @@
             color: transparent;
         }
 
-        /* --- STILI MODALE SALVATAGGIO --- */
+        /* --- STILI MODALE E TOAST --- */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -324,7 +330,6 @@
         }
         .modal-footer { display: flex; justify-content: flex-end; gap: 10px; }
 
-        /* --- MESSAGGIO IN SOVRAIMPRESSIONE (TOAST) --- */
         .toast-overlay {
             position: fixed;
             top: 50%;
@@ -365,13 +370,20 @@
             <div class="menu-wrapper">
                 <button id="menuBtn" class="btn-menu">⋮</button>
                 <div id="dropdownMenu" class="dropdown-menu">
+                    <!-- Controlli Testo -->
                     <div class="menu-item" id="btnUpper"><span>TUTTO MAIUSCOLO</span></div>
                     <div class="menu-item" id="btnLower"><span>tutto minuscolo</span></div>
                     <div class="menu-item" id="btnSentence"><span>Maiuscola dopo punto</span></div>
                     <div class="menu-divider"></div>
+                    <!-- Nuovi Controlli Font -->
+                    <div class="menu-item" id="btnFontFamily"><span>Font: Verdana</span></div>
+                    <div class="menu-item" id="btnFontSize"><span>Testo: Medio</span></div>
+                    <div class="menu-divider"></div>
+                    <!-- Impostazioni Struttura -->
                     <div class="menu-item" id="btnToggleWrap"><span>Righe a capo</span><span id="wrapCheck">✓</span></div>
                     <div class="menu-item" id="btnToggleLines"><span>Numeri riga</span><span id="linesCheck">✓</span></div>
                     <div class="menu-divider"></div>
+                    <!-- Extra -->
                     <div class="menu-item" id="btnCharCount"><span>Conta caratteri</span></div>
                 </div>
             </div>
@@ -458,7 +470,6 @@
         const replaceModeSelect = document.getElementById('replaceModeSelect');
         const btnReplace = document.getElementById('btnReplace');
 
-        // Modale di Salvataggio & Toast
         const saveModal = document.getElementById('saveModal');
         const modalFileName = document.getElementById('modalFileName');
         const modalFileExt = document.getElementById('modalFileExt');
@@ -467,9 +478,47 @@
         const toastOverlay = document.getElementById('toastOverlay');
         let toastTimeout;
 
-        // Impostazioni
+        // Impostazioni Layout
         let isWrapEnabled = true;
         let isLinesEnabled = true;
+
+        // --- GESTIONE FONT E DIMENSIONI ---
+        const fonts = [
+            { name: 'Verdana', value: 'Verdana, sans-serif' },
+            { name: 'Arial', value: 'Arial, sans-serif' },
+            { name: 'Georgia', value: 'Georgia, serif' },
+            { name: 'Monospace', value: 'Consolas, Monaco, "Courier New", monospace' }
+        ];
+        const sizes = [
+            { name: 'Piccolo', value: '13px' },
+            { name: 'Medio', value: '15px' },
+            { name: 'Grande', value: '17px' }
+        ];
+        
+        let currentFontIndex = 0; // Default Verdana
+        let currentSizeIndex = 1; // Default Medio
+
+        function applyFontAndSize() {
+            document.documentElement.style.setProperty('--editor-font', fonts[currentFontIndex].value);
+            document.documentElement.style.setProperty('--editor-size', sizes[currentSizeIndex].value);
+            
+            document.getElementById('btnFontFamily').innerHTML = `<span>Font: ${fonts[currentFontIndex].name}</span>`;
+            document.getElementById('btnFontSize').innerHTML = `<span>Testo: ${sizes[currentSizeIndex].name}</span>`;
+            
+            updateEditor(); // Forza ri-allineamento e ricalcolo Prism
+        }
+
+        document.getElementById('btnFontFamily').addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentFontIndex = (currentFontIndex + 1) % fonts.length;
+            applyFontAndSize();
+        });
+
+        document.getElementById('btnFontSize').addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentSizeIndex = (currentSizeIndex + 1) % sizes.length;
+            applyFontAndSize();
+        });
 
         // --- Funzione Toast (Messaggio temporaneo 1 secondo) ---
         function showToast(message) {
@@ -486,7 +535,7 @@
             showToast(`Modalità: ${selectedText}`);
         });
 
-        // --- Gestione Menu e Impostazioni ---
+        // --- Gestione Menu e Interfaccia ---
         menuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             dropdownMenu.classList.toggle('show');
@@ -619,13 +668,11 @@
             const mode = replaceModeSelect.value;
 
             if (mode === 'all') {
-                // Sostituisce tutte le occorrenze
                 const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
                 editor.value = editor.value.replace(regex, replaceText);
                 saveState();
                 updateEditor();
             } else if (mode === 'one') {
-                // Sostituisce una sola occorrenza (quella attualmente evidenziata/selezionata)
                 if (searchMatches.length === 0 || currentMatchIndex < 0) {
                     performSearch();
                 }
@@ -638,7 +685,6 @@
                     saveState();
                     updateEditor();
 
-                    // Riposiziona il cursore/evidenziazione sul prossimo elemento
                     if (searchMatches.length > 0) {
                         if (currentMatchIndex >= searchMatches.length) {
                             currentMatchIndex = 0;
@@ -649,6 +695,7 @@
             }
         });
 
+        // Bottoni testuali del Menu
         document.getElementById('btnUpper').addEventListener('click', () => { editor.value = editor.value.toUpperCase(); saveState(); updateEditor(); });
         document.getElementById('btnLower').addEventListener('click', () => { editor.value = editor.value.toLowerCase(); saveState(); updateEditor(); });
         document.getElementById('btnSentence').addEventListener('click', () => {
@@ -685,10 +732,19 @@
         }
 
         function setLanguage(fileName) {
-            const ext = fileName ? fileName.split('.').pop().toLowerCase() : '';
+            const ext = fileName ? fileName.split('.').pop().toLowerCase() : 'txt';
             highlightingContent.className = 'wrap-enabled';
             if (!isWrapEnabled) highlightingContent.classList.replace('wrap-enabled', 'wrap-disabled');
             
+            // Logica auto-selezione Font base all'estensione
+            if (['html', 'htm', 'js', 'css', 'asp'].includes(ext)) {
+                currentFontIndex = 3; // Imposta su Monospace per i file di codice
+            } else {
+                currentFontIndex = 0; // Imposta su Verdana per .txt o nuovi documenti
+            }
+            applyFontAndSize();
+
+            // Applicazione Sintassi Prism
             if (ext === 'html' || ext === 'htm' || ext === 'asp') highlightingContent.classList.add('language-markup');
             else if (ext === 'js') highlightingContent.classList.add('language-javascript');
             else if (ext === 'css') highlightingContent.classList.add('language-css');
@@ -801,13 +857,19 @@
             const ext = modalFileExt.value;
             const fullFileName = name + ext;
 
+            // Mappatura esatta del tipo MIME per evitare che il browser forzi l'estensione sbagliata
+            let mimeType = 'text/plain';
+            if (ext === '.html' || ext === '.htm') mimeType = 'text/html';
+            else if (ext === '.js') mimeType = 'text/javascript';
+            else if (ext === '.css') mimeType = 'text/css';
+
             try {
                 const newHandle = await window.showSaveFilePicker({
                     suggestedName: fullFileName,
                     types: [{
-                        description: 'File di testo e codice',
+                        description: `File ${ext.toUpperCase()}`,
                         accept: {
-                            'text/plain': ['.txt', '.html', '.htm', '.js', '.css', '.asp']
+                            [mimeType]: [ext] // Passiamo solo ed esclusivamente l'estensione scelta
                         }
                     }]
                 });
@@ -840,7 +902,7 @@
             historyStack = [''];
             historyIndex = 0;
             fileNameDisplay.textContent = 'Senza titolo';
-            setLanguage('');
+            setLanguage('Senza titolo.txt'); // resetta su Verdana
             setFileStatus('non modificato');
             updateEditor();
         });
@@ -858,13 +920,13 @@
                 });
                 const file = await fileHandle.getFile();
                 fileNameDisplay.textContent = file.name;
-                setLanguage(file.name);
                 
                 originalContent = await file.text();
                 editor.value = originalContent;
                 
                 historyStack = [editor.value];
                 historyIndex = 0;
+                setLanguage(file.name); // Applica sintassi e sceglie Verdana/Monospace
                 setFileStatus('non modificato');
                 updateEditor();
             } catch (err) {
@@ -899,6 +961,7 @@
         });
 
         // Avvio iniziale
+        applyFontAndSize();
         applyWrapState(true);
     </script>
 </body>
