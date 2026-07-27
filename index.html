@@ -32,16 +32,16 @@
             height: 100dvh;
             padding: 8px;
         }
-        header, footer {
+        
+        header {
             flex-shrink: 0;
             z-index: 100;
             display: flex;
             flex-direction: column;
             gap: 6px;
             background-color: #121212;
+            padding-bottom: 8px;
         }
-        header { padding-bottom: 8px; }
-        footer { padding-top: 8px; }
 
         .top-bar {
             display: flex;
@@ -107,33 +107,6 @@
         }
         .menu-item:hover { background-color: #334155; }
         .menu-divider { height: 1px; background-color: #334155; margin: 4px 0; }
-        
-        .search-bar, .replace-bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-        .replace-bar { display: none; }
-        .replace-bar.show { display: flex; }
-        .search-input, .select-mode {
-            padding: 7px 10px;
-            background-color: #1e293b;
-            color: #ffffff;
-            border: 1px solid #334155;
-            border-radius: 6px;
-            font-size: 13px;
-            outline: none;
-        }
-        .search-input { flex: 1; min-width: 120px; }
-        .select-mode { cursor: pointer; }
-        .search-input:focus, .select-mode:focus { border-color: #0ea5e9; }
-        .btn-search {
-            padding: 7px 10px;
-            background-color: #334155;
-            color: #ffffff;
-            border: none;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-        .btn-replace { background-color: #0ea5e9; font-weight: 600; }
-        .search-count { color: #94a3b8; font-size: 11px; min-width: 38px; text-align: center; }
 
         .file-info-bar {
             display: flex;
@@ -159,7 +132,7 @@
         }
         .line-numbers {
             width: 44px;
-            padding: 12px 6px;
+            padding: 12px 6px 90px 6px; /* Padding bottom maggiorato per non coprire i numeri con la barra */
             background-color: #f0f0f0;
             color: #888888;
             font-family: var(--editor-font) !important;
@@ -187,7 +160,7 @@
             left: 0;
             width: 100%; 
             height: 100%;
-            padding: 12px !important;
+            padding: 12px 12px 90px 12px !important; /* Padding bottom per poter scorrere sotto la barra flottante */
             margin: 0 !important;
             border: none !important;
             font-family: var(--editor-font) !important;
@@ -231,6 +204,54 @@
             -webkit-overflow-scrolling: touch;
         }
         textarea::selection { background-color: rgba(14, 165, 233, 0.4); color: transparent; }
+
+        /* --- BARRA FLOTTANTE RICERCA E SOSTITUZIONE --- */
+        .search-panel {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 16px);
+            max-width: 600px;
+            background: rgba(30, 41, 59, 0.85); /* Sfondo semi-trasparente scuro */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid #475569;
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 50;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+
+        .search-bar, .replace-bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .replace-bar { display: none; }
+        .replace-bar.show { display: flex; }
+        .search-input, .select-mode {
+            padding: 7px 10px;
+            background-color: #1e293b;
+            color: #ffffff;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+        }
+        .search-input { flex: 1; min-width: 120px; }
+        .select-mode { cursor: pointer; }
+        .search-input:focus, .select-mode:focus { border-color: #0ea5e9; }
+        .btn-search {
+            padding: 7px 10px;
+            background-color: #334155;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .btn-replace { background-color: #0ea5e9; font-weight: 600; }
+        .search-count { color: #f1f5f9; font-size: 11px; min-width: 38px; text-align: center; }
 
         .modal-overlay {
             display: none;
@@ -315,26 +336,26 @@
             <pre id="highlighting" class="text-layer wrap-enabled"><code id="highlighting-content" class="language-plaintext wrap-enabled"></code></pre>
             <textarea id="editor" class="text-layer wrap-enabled" placeholder="Scrivi qui o apri un file..." spellcheck="false"></textarea>
         </div>
+
+        <!-- PANNELLO RICERCA FLOTTANTE -->
+        <div class="search-panel" id="searchPanel">
+            <div class="search-bar">
+                <input type="text" id="searchInput" class="search-input" placeholder="Cerca...">
+                <button id="prevSearch" class="btn-search">▲</button>
+                <button id="nextSearch" class="btn-search">▼</button>
+                <button id="toggleReplace" class="btn-search">⇄</button>
+                <span id="searchCount" class="search-count">0/0</span>
+            </div>
+            <div id="replaceBar" class="replace-bar">
+                <input type="text" id="replaceInput" class="search-input" placeholder="Sostituisci con...">
+                <select id="replaceModeSelect" class="select-mode" style="padding: 7px;">
+                    <option value="all">Tutte le ricorrenze</option>
+                    <option value="one">Una alla volta</option>
+                </select>
+                <button id="btnReplace" class="btn-search btn-replace">Sostituisci</button>
+            </div>
+        </div>
     </div>
-
-    <footer>
-        <div class="search-bar">
-            <input type="text" id="searchInput" class="search-input" placeholder="Cerca...">
-            <button id="prevSearch" class="btn-search">▲</button>
-            <button id="nextSearch" class="btn-search">▼</button>
-            <button id="toggleReplace" class="btn-search">⇄</button>
-            <span id="searchCount" class="search-count">0/0</span>
-        </div>
-
-        <div id="replaceBar" class="replace-bar">
-            <input type="text" id="replaceInput" class="search-input" placeholder="Sostituisci con...">
-            <select id="replaceModeSelect" class="select-mode" style="padding: 7px;">
-                <option value="all">Tutte le ricorrenze</option>
-                <option value="one">Una alla volta</option>
-            </select>
-            <button id="btnReplace" class="btn-search btn-replace">Sostituisci</button>
-        </div>
-    </footer>
 
     <!-- MODALE SALVATAGGIO CON NOME -->
     <div id="saveModal" class="modal-overlay">
