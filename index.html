@@ -225,7 +225,6 @@
             gap: 6px;
             z-index: 50;
             box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-            /* Transizione aggiunta per renderlo come un tooltip fluido */
             transition: top 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), bottom 0.25s ease-out;
         }
 
@@ -253,7 +252,12 @@
             font-size: 12px;
             cursor: pointer;
         }
-        .btn-replace { background-color: #0ea5e9; font-weight: 600; }
+        
+        /* Stili per colore coordinato e allineamento */
+        .btn-blue { background-color: #0ea5e9; font-weight: 600; }
+        .btn-blue:active { background-color: #0284c7; }
+        .push-right { margin-left: auto; }
+
         .search-count { color: #f1f5f9; font-size: 11px; min-width: 38px; text-align: center; }
 
         .modal-overlay {
@@ -344,8 +348,8 @@
         <div class="search-panel" id="searchPanel">
             <div class="search-bar">
                 <input type="text" id="searchInput" class="search-input" placeholder="Cerca...">
-                <button id="prevSearch" class="btn-search">▲</button>
-                <button id="nextSearch" class="btn-search">▼</button>
+                <button id="prevSearch" class="btn-search btn-blue">▲</button>
+                <button id="nextSearch" class="btn-search btn-blue">▼</button>
                 <button id="toggleReplace" class="btn-search">⇄</button>
                 <span id="searchCount" class="search-count">0/0</span>
             </div>
@@ -355,7 +359,7 @@
                     <option value="all">Tutte le ricorrenze</option>
                     <option value="one">Una alla volta</option>
                 </select>
-                <button id="btnReplace" class="btn-search btn-replace">Sostituisci</button>
+                <button id="btnReplace" class="btn-search btn-blue push-right">Sostituisci</button>
             </div>
         </div>
     </div>
@@ -376,7 +380,7 @@
             </div>
             <div class="modal-footer">
                 <button id="modalCancelBtn" class="btn-search">Annulla</button>
-                <button id="modalConfirmBtn" class="btn-search btn-replace">Conferma</button>
+                <button id="modalConfirmBtn" class="btn-search btn-blue">Conferma</button>
             </div>
         </div>
     </div>
@@ -464,11 +468,12 @@
             applyFontAndSize();
         });
 
-        function showToast(message) {
+        // Modificata per accettare la durata personalizzata del popup
+        function showToast(message, duration = 1500) {
             toastOverlay.textContent = message;
             toastOverlay.classList.add('show');
             clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => { toastOverlay.classList.remove('show'); }, 1500);
+            toastTimeout = setTimeout(() => { toastOverlay.classList.remove('show'); }, duration);
         }
 
         menuBtn.addEventListener('click', (e) => {
@@ -570,10 +575,11 @@
             }
         });
 
-        // Modifica all'apertura del toggle Sostituisci per ricalcolare la posizione
         toggleReplace.addEventListener('click', () => { 
             replaceBar.classList.toggle('show'); 
-            setTimeout(updateTooltipPosition, 10); // Ricalcola al variare dell'altezza
+            if (isTooltipFollowing) {
+                setTimeout(updateTooltipPosition, 10); 
+            }
         });
 
         btnReplace.addEventListener('click', () => {
@@ -651,7 +657,9 @@
             updateEditor();
         }
 
-        let searchMatches = []; let currentMatchIndex = -1;
+        let searchMatches = []; 
+        let currentMatchIndex = -1;
+        let isTooltipFollowing = false; // Flag per controllare se il tooltip deve seguire la parola trovata
 
         // --- LOGICA POSIZIONE TOOLTIP DELLA RICERCA ---
         function resetTooltipPosition() {
@@ -668,7 +676,6 @@
             const match = searchMatches[currentMatchIndex];
             const textBefore = editor.value.substring(0, match.index);
 
-            // Crea un clone fantasma per calcolare la posizione Y
             const clone = document.createElement('div');
             const computed = window.getComputedStyle(editor);
             
@@ -686,7 +693,6 @@
             clone.style.zIndex = '-9999';
             
             clone.textContent = textBefore;
-            // Marker per trovare la Y esatta dove inizia la parola cercata
             const span = document.createElement('span');
             span.textContent = 'X';
             clone.appendChild(span);
@@ -695,12 +701,10 @@
             const yPos = span.offsetTop; 
             document.body.removeChild(clone);
 
-            // Calcola la posizione Y relativa al contenitore scorrevole (scrollTop)
             const visualY = yPos - editor.scrollTop;
             const panelHeight = searchPanel.offsetHeight;
-            let topPosition = visualY - panelHeight - 15; // 15px circa di margine sopra la riga
+            let topPosition = visualY - panelHeight - 15; 
 
-            // Se calcolando la posizione finisce fuori dallo schermo in alto, posizionalo sotto la riga
             if (topPosition < 10) {
                 const lineHeight = parseInt(computed.lineHeight) || 20;
                 topPosition = visualY + lineHeight + 15;
@@ -715,7 +719,8 @@
             searchMatches = [];
             if (!query) { 
                 searchCount.textContent = '0/0'; 
-                currentMatchIndex = -1; 
+                currentMatchIndex = -1;
+                isTooltipFollowing = false;
                 resetTooltipPosition();
                 return; 
             }
@@ -728,6 +733,7 @@
             } else { 
                 currentMatchIndex = -1; 
                 searchCount.textContent = '0/0'; 
+                isTooltipFollowing = false;
                 resetTooltipPosition();
             }
         }
@@ -739,15 +745,47 @@
                 editor.setSelectionRange(match.index, match.index + match.length);
                 if (shouldFocus) editor.focus();
                 syncScroll();
-                
-                // Lasciamo un minimo di delay per far completare lo scroll nativo del browser
-                setTimeout(updateTooltipPosition, 20);
             }
         }
 
-        searchInput.addEventListener('input', () => { currentMatchIndex = 0; performSearch(); scrollToAndHighlightMatch(currentMatchIndex, false); });
-        nextSearch.addEventListener('click', () => { if (!isWrapEnabled) applyWrapState(true); if (searchMatches.length > 0) { currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length; scrollToAndHighlightMatch(currentMatchIndex, true); }});
-        prevSearch.addEventListener('click', () => { if (!isWrapEnabled) applyWrapState(true); if (searchMatches.length > 0) { currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length; scrollToAndHighlightMatch(currentMatchIndex, true); }});
+        // Quando scrivi, la barra rimane in basso (non si muove fino al click sulle frecce)
+        searchInput.addEventListener('input', () => { 
+            isTooltipFollowing = false;
+            resetTooltipPosition();
+            currentMatchIndex = 0; 
+            performSearch(); 
+            scrollToAndHighlightMatch(currentMatchIndex, false); 
+        });
+
+        // Click sulla freccia GIU'
+        nextSearch.addEventListener('click', () => { 
+            if (!searchInput.value) return;
+            if (!isWrapEnabled) applyWrapState(true); 
+            
+            if (searchMatches.length > 0) { 
+                currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length; 
+                scrollToAndHighlightMatch(currentMatchIndex, true); 
+                isTooltipFollowing = true; 
+                updateTooltipPosition(); // Muove la barra
+            } else {
+                showToast("Nessuna ricorrenza trovata", 1000);
+            }
+        });
+
+        // Click sulla freccia SU'
+        prevSearch.addEventListener('click', () => { 
+            if (!searchInput.value) return;
+            if (!isWrapEnabled) applyWrapState(true); 
+            
+            if (searchMatches.length > 0) { 
+                currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length; 
+                scrollToAndHighlightMatch(currentMatchIndex, true); 
+                isTooltipFollowing = true; 
+                updateTooltipPosition(); // Muove la barra
+            } else {
+                showToast("Nessuna ricorrenza trovata", 1000);
+            }
+        });
 
         // Eventi di Scrittura e Incolla
         let debounceTimer;
@@ -760,10 +798,10 @@
             setTimeout(() => { saveState(); updateEditor(); }, 10);
         });
 
-        // Aggiorna la barra flottante mentre si scorre il documento
+        // Aggiorna la barra flottante mentre si scorre (solo se il tooltip è agganciato alla parola)
         editor.addEventListener('scroll', () => {
             syncScroll();
-            if (searchInput.value && searchMatches.length > 0) {
+            if (isTooltipFollowing && searchInput.value && searchMatches.length > 0) {
                 updateTooltipPosition();
             }
         });
