@@ -132,7 +132,7 @@
         }
         .line-numbers {
             width: 44px;
-            padding: 12px 6px 90px 6px; /* Padding bottom maggiorato per non coprire i numeri con la barra */
+            padding: 12px 6px 90px 6px; 
             background-color: #f0f0f0;
             color: #888888;
             font-family: var(--editor-font) !important;
@@ -160,7 +160,7 @@
             left: 0;
             width: 100%; 
             height: 100%;
-            padding: 12px 12px 90px 12px !important; /* Padding bottom per poter scorrere sotto la barra flottante */
+            padding: 12px 12px 90px 12px !important; 
             margin: 0 !important;
             border: none !important;
             font-family: var(--editor-font) !important;
@@ -208,12 +208,13 @@
         /* --- BARRA FLOTTANTE RICERCA E SOSTITUZIONE --- */
         .search-panel {
             position: absolute;
-            bottom: 8px;
+            bottom: 8px; /* Default in basso */
+            top: auto; 
             left: 50%;
             transform: translateX(-50%);
             width: calc(100% - 16px);
             max-width: 600px;
-            background: rgba(30, 41, 59, 0.85); /* Sfondo semi-trasparente scuro */
+            background: rgba(30, 41, 59, 0.85); 
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             border: 1px solid #475569;
@@ -224,6 +225,8 @@
             gap: 6px;
             z-index: 50;
             box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            /* Transizione aggiunta per renderlo come un tooltip fluido */
+            transition: top 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), bottom 0.25s ease-out;
         }
 
         .search-bar, .replace-bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
@@ -394,6 +397,7 @@
         const menuBtn = document.getElementById('menuBtn');
         const dropdownMenu = document.getElementById('dropdownMenu');
         
+        const searchPanel = document.getElementById('searchPanel');
         const searchInput = document.getElementById('searchInput');
         const prevSearch = document.getElementById('prevSearch');
         const nextSearch = document.getElementById('nextSearch');
@@ -566,7 +570,11 @@
             }
         });
 
-        toggleReplace.addEventListener('click', () => { replaceBar.classList.toggle('show'); });
+        // Modifica all'apertura del toggle Sostituisci per ricalcolare la posizione
+        toggleReplace.addEventListener('click', () => { 
+            replaceBar.classList.toggle('show'); 
+            setTimeout(updateTooltipPosition, 10); // Ricalcola al variare dell'altezza
+        });
 
         btnReplace.addEventListener('click', () => {
             const query = searchInput.value;
@@ -645,17 +653,83 @@
 
         let searchMatches = []; let currentMatchIndex = -1;
 
+        // --- LOGICA POSIZIONE TOOLTIP DELLA RICERCA ---
+        function resetTooltipPosition() {
+            searchPanel.style.top = 'auto';
+            searchPanel.style.bottom = '8px';
+        }
+
+        function updateTooltipPosition() {
+            if (currentMatchIndex < 0 || searchMatches.length === 0 || !searchInput.value) {
+                resetTooltipPosition();
+                return;
+            }
+
+            const match = searchMatches[currentMatchIndex];
+            const textBefore = editor.value.substring(0, match.index);
+
+            // Crea un clone fantasma per calcolare la posizione Y
+            const clone = document.createElement('div');
+            const computed = window.getComputedStyle(editor);
+            
+            clone.style.fontFamily = computed.fontFamily;
+            clone.style.fontSize = computed.fontSize;
+            clone.style.lineHeight = computed.lineHeight;
+            clone.style.padding = computed.padding;
+            clone.style.width = editor.clientWidth + 'px'; 
+            clone.style.whiteSpace = computed.whiteSpace;
+            clone.style.wordWrap = computed.wordWrap;
+            clone.style.wordBreak = computed.wordBreak;
+            clone.style.boxSizing = 'border-box';
+            clone.style.position = 'absolute';
+            clone.style.visibility = 'hidden';
+            clone.style.zIndex = '-9999';
+            
+            clone.textContent = textBefore;
+            // Marker per trovare la Y esatta dove inizia la parola cercata
+            const span = document.createElement('span');
+            span.textContent = 'X';
+            clone.appendChild(span);
+            
+            document.body.appendChild(clone);
+            const yPos = span.offsetTop; 
+            document.body.removeChild(clone);
+
+            // Calcola la posizione Y relativa al contenitore scorrevole (scrollTop)
+            const visualY = yPos - editor.scrollTop;
+            const panelHeight = searchPanel.offsetHeight;
+            let topPosition = visualY - panelHeight - 15; // 15px circa di margine sopra la riga
+
+            // Se calcolando la posizione finisce fuori dallo schermo in alto, posizionalo sotto la riga
+            if (topPosition < 10) {
+                const lineHeight = parseInt(computed.lineHeight) || 20;
+                topPosition = visualY + lineHeight + 15;
+            }
+
+            searchPanel.style.bottom = 'auto'; 
+            searchPanel.style.top = topPosition + 'px';
+        }
+
         function performSearch() {
             const query = searchInput.value;
             searchMatches = [];
-            if (!query) { searchCount.textContent = '0/0'; currentMatchIndex = -1; return; }
+            if (!query) { 
+                searchCount.textContent = '0/0'; 
+                currentMatchIndex = -1; 
+                resetTooltipPosition();
+                return; 
+            }
             let match;
             const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
             while ((match = regex.exec(editor.value)) !== null) searchMatches.push({ index: match.index, length: match[0].length });
             if (searchMatches.length > 0) {
                 if (currentMatchIndex < 0 || currentMatchIndex >= searchMatches.length) currentMatchIndex = 0;
                 searchCount.textContent = `${currentMatchIndex + 1}/${searchMatches.length}`;
-            } else { currentMatchIndex = -1; searchCount.textContent = '0/0'; }
+            } else { 
+                currentMatchIndex = -1; 
+                searchCount.textContent = '0/0'; 
+                resetTooltipPosition();
+            }
         }
 
         function scrollToAndHighlightMatch(index, shouldFocus = false) {
@@ -665,6 +739,9 @@
                 editor.setSelectionRange(match.index, match.index + match.length);
                 if (shouldFocus) editor.focus();
                 syncScroll();
+                
+                // Lasciamo un minimo di delay per far completare lo scroll nativo del browser
+                setTimeout(updateTooltipPosition, 20);
             }
         }
 
@@ -683,7 +760,13 @@
             setTimeout(() => { saveState(); updateEditor(); }, 10);
         });
 
-        editor.addEventListener('scroll', syncScroll);
+        // Aggiorna la barra flottante mentre si scorre il documento
+        editor.addEventListener('scroll', () => {
+            syncScroll();
+            if (searchInput.value && searchMatches.length > 0) {
+                updateTooltipPosition();
+            }
+        });
 
         // --- SALVATAGGIO FILE ---
         function openSaveModal() {
