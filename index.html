@@ -208,13 +208,14 @@
         /* --- BARRA FLOTTANTE RICERCA E SOSTITUZIONE --- */
         .search-panel {
             position: absolute;
-            bottom: 8px; /* Default in basso */
+            bottom: 8px; 
+            right: 8px; /* Inizialmente posizionato in basso a destra */
             top: auto; 
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 16px);
+            left: auto;
+            transform: none;
+            width: auto;
             max-width: 600px;
-            background: rgba(30, 41, 59, 0.85); 
+            background: rgba(30, 41, 59, 0.9); 
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             border: 1px solid #475569;
@@ -225,12 +226,33 @@
             gap: 6px;
             z-index: 50;
             box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-            transition: top 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), bottom 0.25s ease-out;
+            transition: top 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), bottom 0.25s ease-out, width 0.2s ease;
+        }
+
+        /* Stato iniziale (pulsantino "cerca") */
+        .search-panel.collapsed {
+            padding: 6px 14px;
+            cursor: pointer;
+        }
+        .search-panel.collapsed .search-bar > *:not(#openSearchPill) {
+            display: none !important;
+        }
+        .search-panel.collapsed #openSearchPill {
+            display: flex !important;
+        }
+
+        /* Stato aperto */
+        .search-panel:not(.collapsed) {
+            width: calc(100% - 16px);
+            left: 50%;
+            transform: translateX(-50%);
+            right: auto;
         }
 
         .search-bar, .replace-bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
         .replace-bar { display: none; }
         .replace-bar.show { display: flex; }
+        
         .search-input, .select-mode {
             padding: 7px 10px;
             background-color: #1e293b;
@@ -243,6 +265,7 @@
         .search-input { flex: 1; min-width: 120px; }
         .select-mode { cursor: pointer; }
         .search-input:focus, .select-mode:focus { border-color: #0ea5e9; }
+        
         .btn-search {
             padding: 7px 10px;
             background-color: #334155;
@@ -253,12 +276,35 @@
             cursor: pointer;
         }
         
-        /* Stili per colore coordinato e allineamento */
-        .btn-blue { background-color: #0ea5e9; font-weight: 600; }
+        .btn-blue { background-color: #0ea5e9; font-weight: 600; color: #ffffff; }
         .btn-blue:active { background-color: #0284c7; }
         .push-right { margin-left: auto; }
 
         .search-count { color: #f1f5f9; font-size: 11px; min-width: 38px; text-align: center; }
+
+        /* Pulsante X di chiusura rosso */
+        .close-search-btn {
+            display: none;
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 24px;
+            height: 24px;
+            background-color: #ef4444;
+            color: white;
+            border: 2px solid #1e293b;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 60;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        }
+        .search-panel:not(.collapsed) .close-search-btn {
+            display: flex;
+        }
 
         .modal-overlay {
             display: none;
@@ -345,8 +391,10 @@
         </div>
 
         <!-- PANNELLO RICERCA FLOTTANTE -->
-        <div class="search-panel" id="searchPanel">
+        <div class="search-panel collapsed" id="searchPanel">
+            <button id="closeSearchBtn" class="close-search-btn">✕</button>
             <div class="search-bar">
+                <button id="openSearchPill" class="btn-search btn-blue" style="width: 100%;">Cerca</button>
                 <input type="text" id="searchInput" class="search-input" placeholder="Cerca...">
                 <button id="prevSearch" class="btn-search btn-blue">▲</button>
                 <button id="nextSearch" class="btn-search btn-blue">▼</button>
@@ -402,6 +450,8 @@
         const dropdownMenu = document.getElementById('dropdownMenu');
         
         const searchPanel = document.getElementById('searchPanel');
+        const openSearchPill = document.getElementById('openSearchPill');
+        const closeSearchBtn = document.getElementById('closeSearchBtn');
         const searchInput = document.getElementById('searchInput');
         const prevSearch = document.getElementById('prevSearch');
         const nextSearch = document.getElementById('nextSearch');
@@ -468,7 +518,6 @@
             applyFontAndSize();
         });
 
-        // Modificata per accettare la durata personalizzata del popup
         function showToast(message, duration = 1500) {
             toastOverlay.textContent = message;
             toastOverlay.classList.add('show');
@@ -575,6 +624,24 @@
             }
         });
 
+        // --- GESTIONE APERTURA / CHIUSURA BARRA DI RICERCA ---
+        openSearchPill.addEventListener('click', (e) => {
+            e.stopPropagation();
+            searchPanel.classList.remove('collapsed');
+            searchInput.focus();
+        });
+
+        closeSearchBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            searchInput.value = '';
+            replaceInput.value = '';
+            replaceBar.classList.remove('show');
+            searchPanel.classList.add('collapsed');
+            resetTooltipPosition();
+            isTooltipFollowing = false;
+            performSearch();
+        });
+
         toggleReplace.addEventListener('click', () => { 
             replaceBar.classList.toggle('show'); 
             if (isTooltipFollowing) {
@@ -659,15 +726,21 @@
 
         let searchMatches = []; 
         let currentMatchIndex = -1;
-        let isTooltipFollowing = false; // Flag per controllare se il tooltip deve seguire la parola trovata
+        let isTooltipFollowing = false; 
 
         // --- LOGICA POSIZIONE TOOLTIP DELLA RICERCA ---
         function resetTooltipPosition() {
             searchPanel.style.top = 'auto';
             searchPanel.style.bottom = '8px';
+            if (searchPanel.classList.contains('collapsed')) {
+                searchPanel.style.right = '8px';
+                searchPanel.style.left = 'auto';
+                searchPanel.style.transform = 'none';
+            }
         }
 
         function updateTooltipPosition() {
+            if (searchPanel.classList.contains('collapsed')) return;
             if (currentMatchIndex < 0 || searchMatches.length === 0 || !searchInput.value) {
                 resetTooltipPosition();
                 return;
@@ -721,7 +794,7 @@
                 searchCount.textContent = '0/0'; 
                 currentMatchIndex = -1;
                 isTooltipFollowing = false;
-                resetTooltipPosition();
+                if (!searchPanel.classList.contains('collapsed')) resetTooltipPosition();
                 return; 
             }
             let match;
@@ -734,7 +807,7 @@
                 currentMatchIndex = -1; 
                 searchCount.textContent = '0/0'; 
                 isTooltipFollowing = false;
-                resetTooltipPosition();
+                if (!searchPanel.classList.contains('collapsed')) resetTooltipPosition();
             }
         }
 
@@ -748,16 +821,14 @@
             }
         }
 
-        // Quando scrivi, la barra rimane in basso (non si muove fino al click sulle frecce)
         searchInput.addEventListener('input', () => { 
             isTooltipFollowing = false;
-            resetTooltipPosition();
+            if (!searchPanel.classList.contains('collapsed')) resetTooltipPosition();
             currentMatchIndex = 0; 
             performSearch(); 
             scrollToAndHighlightMatch(currentMatchIndex, false); 
         });
 
-        // Click sulla freccia GIU'
         nextSearch.addEventListener('click', () => { 
             if (!searchInput.value) return;
             if (!isWrapEnabled) applyWrapState(true); 
@@ -766,13 +837,12 @@
                 currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length; 
                 scrollToAndHighlightMatch(currentMatchIndex, true); 
                 isTooltipFollowing = true; 
-                updateTooltipPosition(); // Muove la barra
+                updateTooltipPosition(); 
             } else {
                 showToast("Nessuna ricorrenza trovata", 1000);
             }
         });
 
-        // Click sulla freccia SU'
         prevSearch.addEventListener('click', () => { 
             if (!searchInput.value) return;
             if (!isWrapEnabled) applyWrapState(true); 
@@ -781,13 +851,12 @@
                 currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length; 
                 scrollToAndHighlightMatch(currentMatchIndex, true); 
                 isTooltipFollowing = true; 
-                updateTooltipPosition(); // Muove la barra
+                updateTooltipPosition(); 
             } else {
                 showToast("Nessuna ricorrenza trovata", 1000);
             }
         });
 
-        // Eventi di Scrittura e Incolla
         let debounceTimer;
         editor.addEventListener('input', () => {
             clearTimeout(debounceTimer);
@@ -798,7 +867,6 @@
             setTimeout(() => { saveState(); updateEditor(); }, 10);
         });
 
-        // Aggiorna la barra flottante mentre si scorre (solo se il tooltip è agganciato alla parola)
         editor.addEventListener('scroll', () => {
             syncScroll();
             if (isTooltipFollowing && searchInput.value && searchMatches.length > 0) {
@@ -893,7 +961,6 @@
             } catch (err) { console.log('Apertura annullata', err); }
         });
 
-        // Pulsante SALVA DIRETTO
         document.getElementById('saveBtn').addEventListener('click', async () => {
             if (!fileHandle) {
                 openSaveModal();
